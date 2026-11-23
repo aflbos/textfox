@@ -10,7 +10,7 @@
 _a firefox theme for the tui enthusiast_
 
 > [!NOTE]
-> **Edição Waterfox** (branch `waterfox`). Fork pessoal do textfox ajustado para o
+> **Edição Waterfox** (branches `main` e `waterfox` deste fork). Fork pessoal do textfox ajustado para o
 > Waterfox e carregado como mod local do [Sine](https://github.com/CosmoCreeper/Sine).
 >
 > - `chrome/waterfox.css`: estilo textfox para a barra de status do Waterfox
@@ -45,8 +45,9 @@ _a firefox theme for the tui enthusiast_
 >   O script copia o mod para `chrome\sine-mods\textfox-waterfox`, registra no
 >   `mods.json` com atualizações automáticas desligadas e desabilita (sem apagar)
 >   a instalação original do textfox. Um backup de `mods.json` é criado a cada execução.
-> - Atualizações do textfox original: `git fetch origin && git merge origin/main`
->   na branch `waterfox`.
+> - Atualizações do textfox original: `git fetch upstream && git merge upstream/main`
+>   na branch de trabalho. O remoto `upstream` aponta para
+>   [adriankarlen/textfox](https://github.com/adriankarlen/textfox); `origin` é este fork.
 
 ## Preview
 
