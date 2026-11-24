@@ -1,4 +1,4 @@
-{ stdenv, fetchFromGithub, ... }:
+{ stdenv, ... }:
 
 stdenv.mkDerivation {
   pname = "textfox";
@@ -9,6 +9,6 @@ stdenv.mkDerivation {
   installPhase = ''
     mkdir -p $out/chrome
     cp -r chrome/* $out/chrome
-    cp user.js $out/user.js  
+    cp user.js $out/user.js
   '';
 }

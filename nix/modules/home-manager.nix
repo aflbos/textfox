@@ -43,7 +43,6 @@ in
         map (profile: {
           "${profile}" = {
             extraConfig = builtins.readFile "${package}/user.js";
-            containersForce = true;
             userChrome = lib.mkBefore (builtins.readFile "${package}/chrome/userChrome.css");
           };
         }) cfg.profiles
@@ -55,7 +54,13 @@ in
         "${configDir}${profile}/chrome" = {
           source = pkgs.lib.cleanSourceWith {
             src = "${package}/chrome";
-            filter = path: type: !(type == "regular" && baseNameOf path == "userChrome.css");
+            # These entry points are generated separately by Home Manager.
+            filter =
+              path: _:
+              !builtins.elem (baseNameOf path) [
+                "userChrome.css"
+                "config.css"
+              ];
           };
           recursive = true;
         };

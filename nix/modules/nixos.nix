@@ -8,7 +8,6 @@ inputs:
 let
   inherit (lib.options) mkOption mkPackageOption;
   inherit (lib.modules) mkIf;
-  inherit (lib.attrsets) optionalAttrs;
   inherit (lib.types) listOf path str;
   inherit (lib.trivial) boolToString;
 
@@ -72,7 +71,6 @@ in
             configCss
             ;
 
-          extraPolicies = policies;
           extraPrefs = preferences;
         })
       ];

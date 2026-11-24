@@ -14,5 +14,14 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
       - name: Check Nix formatting with nixfmt
+        run: nix run nixpkgs#nixfmt-tree -- --ci
+      - name: Parse the Nix flake and modules
         run: |
-          nix run nixpkgs#nixfmt-tree
+          nix-instantiate --parse flake.nix >/dev/null
+          while IFS= read -r -d '' file; do
+            nix-instantiate --parse "$file" >/dev/null
+          done < <(find nix -name '*.nix' -print0)
+      - name: Test Firefox AutoConfig profile safety
+        run: node --test tests/nix-profile.test.mjs
+      - name: Test the Nix CSS bundle
+        run: bash tests/nix-bundle.sh

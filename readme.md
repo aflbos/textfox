@@ -85,17 +85,20 @@ _a firefox theme for the tui enthusiast_
 
 ### Installation script
 
-1. Download/clone the repo.
-2. Inside the download run `bash tf-install.sh` and follow the script
-   instructions.
+1. Download or clone the repo and close Firefox.
+2. Run `bash tf-install.sh` and enter the profile path, or pass the path as
+   an argument.
 
-> [!IMPORTANT]
-> This script automates file writes, use with caution.
+The script installs the theme in the profile's `chrome/textfox/` directory.
+It creates `chrome/userChrome.css` and `chrome/userContent.css` as imports
+of that package. It offers to add `user.js` if the profile has none.
 
-> [!NOTE]
-> The script moves the existing `chrome` directory to a timestamped backup
-> and installs the repository's `chrome` directory. Copy any custom CSS
-> you want to keep using from the backup into the new installation.
+If a first installation finds a stylesheet at either entry point, it stops.
+This also covers older textfox installations that placed the full CSS in
+`chrome/`. Review and save the existing entry points before migrating, or
+use the manual instructions to combine styles. On subsequent updates, the
+script keeps your `chrome/textfox/config.css` and archives the old package
+under `chrome/textfox-backups/`.
 
 ### Manual
 
@@ -103,8 +106,15 @@ _a firefox theme for the tui enthusiast_
 2. Go to `about:profiles`
 3. Find the names of target profiles (ex: `Profile: Default`)
 4. Open the profile's root directory
-5. Move the files chrome directory and user.js there
-6. Restart Firefox
+5. Copy the repository's `chrome` directory to `<profile>/chrome/textfox`.
+   At the beginning of `<profile>/chrome/userChrome.css` and
+   `<profile>/chrome/userContent.css`, add
+   `@import url("textfox/userChrome.css");` and
+   `@import url("textfox/userContent.css");` respectively. Keep any existing
+   `@charset` rule first. Create the entry files if they are missing.
+6. Apply the preferences from `user.js`. If the profile already has a
+   `user.js`, add the desired preferences to it.
+7. Restart Firefox.
 
 > [!IMPORTANT]
 > textfox now supports horizontal tabs, to enable them change the
@@ -118,7 +128,16 @@ _a firefox theme for the tui enthusiast_
 
 ### Nix
 
-This repo includes a Nix flake that exposes a home-manager module that installs textfox.
+This repo includes Home Manager and NixOS modules. Home Manager links the
+stylesheets and generates `config.css` from `textfox.config`.
+
+The NixOS wrapper installs two generated entry files in the Firefox profile.
+It updates its own unedited files and keeps other files in `chrome/`. If it
+encounters existing or edited entry files, it skips the update and logs the
+conflict in the Browser Console. To migrate a legacy profile, close Firefox,
+review and save the two existing entry files, then move them aside and launch
+the wrapper. Put additional rules in `textfox.extraUserChrome` and
+`textfox.extraUserContent`.
 
 To enable the module, add the repo as a flake input, import the module, and enable textfox.
 
@@ -275,36 +294,27 @@ All configuration options are optional and can be set as this example shows (rea
 
 ## Uninstallation
 
-> [!IMPORTANT]
-> The instructions below remove the entire profile `chrome` directory.
-> For a Sine installation, use `tools\install-sine.ps1 -Uninstall` as described
-> in the Waterfox section above.
+For a Sine installation, use `tools\install-sine.ps1 -Uninstall` as described
+in the Waterfox section above.
 
 ### Uninstall script
 
-1. Inside the cloned repo run `bash tf-uninstall.sh` and follow the script
-   instructions.
-
-> [!IMPORTANT]
-> This script automates file removal, use with caution.
-
-> [!NOTE]
-> The uninstall script will offer to restore the most recent backup created by
-> the install script (e.g. `chrome-YYYYMMDD_HHMMSS.bak`) if one is found in
-> your Firefox profile directory.
+Close Firefox and run `bash tf-uninstall.sh`. The script archives the managed
+package and its untouched entry files in `chrome/textfox-backups/`. It also
+archives `user.js` if the installer created it and its contents are unchanged.
+If you edited an entry file, remove any remaining textfox import from it
+manually. For a legacy layout without a managed package, follow the manual
+instructions below.
 
 ### Manual
 
-1. Go to `about:profiles`
-2. Open the root directory of the profile textfox was installed to
-3. Delete the `chrome` directory
-4. Delete `user.js` (only if it was placed there by textfox)
-5. Restart Firefox
-
-> [!NOTE]
-> If you had a previous `chrome` directory before installing textfox, the
-> install script backed it up as `chrome-YYYYMMDD_HHMMSS.bak`. You can restore
-> it by renaming it back to `chrome`.
+1. Use `about:profiles` to locate the profile, then close Firefox.
+2. Remove the textfox imports from the entry files. Move the textfox package
+   out of `chrome/`, keeping files that belong to other customizations.
+3. For older layouts, identify the textfox files before moving them. Compare
+   any previous `chrome-YYYYMMDD_HHMMSS.bak` backup with the active profile
+   and restore only the files you need.
+4. Revert the textfox preferences you added, as needed. Restart Firefox.
 
 ## Customization
 
@@ -317,8 +327,9 @@ the same settings are used (these can be set in about:config).
 | `shyfox.enable.context.menu.icons` | Many context menu items get icons | No icons in context menus |
 
 ### CSS configurations
-The theme ships with a `defaults.css`, this file can be overridden by creating a
-`config.css` inside the chrome directory.
+The theme ships with a `defaults.css`. Its values can be overridden in
+`config.css` next to it. In a Bash or manual installation, both files are in
+`<profile>/chrome/textfox/`.
 
 #### Defaults
 ```css

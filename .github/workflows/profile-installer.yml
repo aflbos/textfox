@@ -1,0 +1,18 @@
+name: Test Profile Installer
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  profile-installer:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Test installation and removal
+        run: bash tests/profile-installer.sh
