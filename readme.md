@@ -36,15 +36,31 @@ _a firefox theme for the tui enthusiast_
 >   URL bar → Border.
 >   Sem a extensão, o tema não define `toolbar_field_border` e os contornos ficam
 >   transparentes: remova o bloco `:root[lwtheme]` de `config.css`.
-> - Instalar/atualizar no perfil padrão (depois, reiniciar o Waterfox):
+> - Feche o Waterfox antes de instalar, atualizar ou remover o mod. Com o Sine
+>   já instalado, use o comando abaixo para instalar ou atualizar no perfil
+>   padrão. Se houver mais de um perfil padrão, indique o caminho do perfil
+>   com `-ProfilePath "C:\caminho\do\perfil"`.
 >
 >   ```powershell
 >   powershell -ExecutionPolicy Bypass -File tools\install-sine.ps1
 >   ```
 >
->   O script copia o mod para `chrome\sine-mods\textfox-waterfox`, registra no
->   `mods.json` com atualizações automáticas desligadas e desabilita (sem apagar)
->   a instalação original do textfox. Um backup de `mods.json` é criado a cada execução.
+>   O script valida o registro do Sine antes de trocar os arquivos. Ele instala
+>   o mod em `chrome\sine-mods\textfox-waterfox`, desliga as atualizações
+>   automáticas para essa cópia e desabilita o textfox original, se estiver ativo.
+> - Para remover o mod local:
+>
+>   ```powershell
+>   powershell -ExecutionPolicy Bypass -File tools\install-sine.ps1 -Uninstall
+>   ```
+>
+>   A remoção afeta apenas o mod local. Para voltar ao textfox original,
+>   reative-o no painel do Sine.
+> - A pasta `chrome\textfox-sine-backups` guarda um diretório por operação, com
+>   o registro anterior em `mods.json` e o pacote substituído em `previous/`,
+>   quando ele existia. Se precisar recuperar uma versão, feche o Waterfox e
+>   use esses arquivos para restaurar a pasta e a entrada do mod. Preserve
+>   as alterações posteriores dos outros mods no registro.
 > - Atualizações do textfox original: `git fetch upstream && git merge upstream/main`
 >   na `main`. O remoto `upstream` aponta para
 >   [adriankarlen/textfox](https://github.com/adriankarlen/textfox); `origin` é este fork.
@@ -70,16 +86,16 @@ _a firefox theme for the tui enthusiast_
 ### Installation script
 
 1. Download/clone the repo.
-2. Inside the download run `sh tf-install.sh` and follow the script
+2. Inside the download run `bash tf-install.sh` and follow the script
    instructions.
 
 > [!IMPORTANT]
 > This script automates file writes, use with caution.
 
 > [!NOTE]
-> The installation script copies to contents of the repos `chrome` directory to
-> the path specified, this way your `config.css` or any other `css`-files not
-> part of the repo will be kept.
+> The script moves the existing `chrome` directory to a timestamped backup
+> and installs the repository's `chrome` directory. Copy any custom CSS
+> you want to keep using from the backup into the new installation.
 
 ### Manual
 
@@ -259,9 +275,14 @@ All configuration options are optional and can be set as this example shows (rea
 
 ## Uninstallation
 
+> [!IMPORTANT]
+> The instructions below remove the entire profile `chrome` directory.
+> For a Sine installation, use `tools\install-sine.ps1 -Uninstall` as described
+> in the Waterfox section above.
+
 ### Uninstall script
 
-1. Inside the cloned repo run `sh tf-uninstall.sh` and follow the script
+1. Inside the cloned repo run `bash tf-uninstall.sh` and follow the script
    instructions.
 
 > [!IMPORTANT]

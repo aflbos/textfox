@@ -1,0 +1,19 @@
+name: Test Sine Installer
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sine-installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Test with Windows PowerShell
+        shell: powershell
+        run: ./tests/sine-installer.ps1
+      - name: Test with PowerShell 7
+        shell: pwsh
+        run: ./tests/sine-installer.ps1
