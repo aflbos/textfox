@@ -14,11 +14,9 @@
   box-shadow: none !important;
 }
 
-#sidebar-main {
-  :root[lwtheme] & {
-    background-color: var(--tf-bg) !important;
-    background-image: unset !important;
-  }
+:root[lwtheme] :is(sidebar-main, #sidebar-main) {
+  background-color: var(--tf-bg) !important;
+  background-image: unset !important;
 }
 #sidebar-box {
   font-size: unset !important;
