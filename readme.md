@@ -511,6 +511,16 @@ sh tools/firefox-chrome/firefox-live.sh --vanilla nav-bar
 > Live inspection needs a display; on headless Linux prefix the command with
 > `xvfb-run -a`.
 
+### Test the Waterfox interface
+
+This test uses Python 3.10 or later to load the theme in a temporary offline
+Waterfox profile. It checks toolbar colors with test themes, sidebar expansion,
+tree tabs, reduced motion and the status bar in fullscreen.
+
+```powershell
+python tests/waterfox-chrome.py "C:\Program Files\Waterfox\waterfox.exe"
+```
+
 ### Test the Nix profile installer in Gecko
 
 The integration test uses Python 3.10 or later and an installed Firefox or

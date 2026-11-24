@@ -1,42 +1,16 @@
 #!/usr/bin/env python3
 """Exercise the AutoConfig installer with Gecko's actual profile file APIs."""
 
-import argparse
 import hashlib
-import itertools
 import json
 from pathlib import Path
-import socket
-import subprocess
-import tempfile
-import time
+
+from gecko_session import browser_argument, gecko_profile
 
 
 ROOT = Path(__file__).resolve().parents[1]
 STYLESHEETS = ("userChrome.css", "userContent.css")
 INSTALLER = (ROOT / "nix/pkgs/install-profile.js").read_text(encoding="utf-8")
-
-
-def connect(port, process, log):
-    deadline = time.monotonic() + 15
-    while process.poll() is None and time.monotonic() < deadline:
-        try:
-            return socket.create_connection(("127.0.0.1", port), timeout=0.5)
-        except OSError:
-            time.sleep(0.25)
-    raise RuntimeError(
-        f"Marionette did not start (exit {process.poll()}).\n"
-        f"{log.read_text(encoding='utf-8', errors='replace')}"
-    )
-
-
-def receive(stream):
-    length = b""
-    while (piece := stream.read(1)) != b":":
-        if not piece:
-            raise EOFError("Marionette closed the connection.")
-        length += piece
-    return json.loads(stream.read(int(length)))
 
 
 def package(directory, version):
@@ -67,12 +41,9 @@ return {messages, restarts, version: nativeServices.appinfo.version};
 """
 
 
-def check_profile(work, profile, command):
+def check_profile(work, profile, execute):
     def install(source):
-        return command("WebDriver:ExecuteScript", {
-            "script": installer_script(source),
-            "args": [], "newSandbox": True, "sandbox": "system",
-        })["value"]
+        return execute(installer_script(source))
 
     def check_stylesheets(source):
         for name in STYLESHEETS:
@@ -121,74 +92,8 @@ def check_profile(work, profile, command):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("browser", type=Path, help="Path to the Firefox or Waterfox executable")
-    browser = parser.parse_args().browser.resolve(strict=True)
-    if not browser.is_file():
-        parser.error("The browser path must point to an executable file.")
-
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        port = probe.getsockname()[1]
-
-    temp = Path(tempfile.gettempdir()).resolve()
-    with tempfile.TemporaryDirectory(
-        prefix="textfox-gecko-", dir=temp, ignore_cleanup_errors=True
-    ) as scratch:
-        work = Path(scratch)
-        profile = work / "profile"
-        profile.mkdir()
-        prefs = {
-            "marionette.port": port,
-            "browser.shell.checkDefaultBrowser": False,
-            "browser.aboutwelcome.enabled": False,
-            "datareporting.policy.dataSubmissionEnabled": False,
-            "app.update.auto": False,
-        }
-        (profile / "user.js").write_text(
-            "\n".join(f"user_pref({json.dumps(key)}, {json.dumps(value)});"
-                      for key, value in prefs.items()) + "\n",
-            encoding="utf-8",
-        )
-        log = work / "browser.log"
-        with log.open("wb") as output:
-            process = subprocess.Popen(
-                [str(browser), "-headless", "-no-remote", "-offline", "-marionette",
-                 "-remote-allow-system-access", "-profile", str(profile), "about:blank"],
-                stdout=output, stderr=output,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-            )
-            try:
-                with connect(port, process, log) as connection, connection.makefile("rb") as stream:
-                    connection.settimeout(15)
-                    receive(stream)
-                    request_ids = itertools.count(1)
-
-                    def command(name, params=None):
-                        request_id = next(request_ids)
-                        payload = json.dumps([0, request_id, name, params or {}]).encode()
-                        connection.sendall(str(len(payload)).encode() + b":" + payload)
-                        _, response_id, error, result = receive(stream)
-                        assert request_id == response_id
-                        if error:
-                            raise RuntimeError(error)
-                        return result
-
-                    command("WebDriver:NewSession", {"capabilities": {"alwaysMatch": {}}})
-                    command("Marionette:SetContext", {"value": "chrome"})
-                    try:
-                        check_profile(work, profile, command)
-                    finally:
-                        try:
-                            command("Marionette:Quit", {"flags": ["eAttemptQuit"]})
-                        except (EOFError, OSError, RuntimeError):
-                            pass
-            finally:
-                try:
-                    process.wait(timeout=8)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait(timeout=8)
+    with gecko_profile(browser_argument(__doc__)) as (work, profile, execute):
+        check_profile(work, profile, execute)
 
 
 if __name__ == "__main__":
