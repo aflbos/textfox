@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Análise técnica do textfox-waterfox</title>
+<style>
+:root { color-scheme: light dark; --surface: light-dark(#edf4f0,#172722); --ink: light-dark(#172722,#e1ebe6); --muted: light-dark(#455e54,#a5bcb1); --line: light-dark(#b7ccc1,#425c50); --accent: light-dark(#17604a,#94d9bb); }
+body { margin: 0; background: Canvas; color: var(--ink); font: 16px/1.55 system-ui,sans-serif; }
+main { max-width: 78ch; margin: auto; padding: 2.5rem 1.25rem 4rem; }
+h1,h2 { line-height: 1.2; }
+h1 { margin: .25rem 0 1rem; font-size: 1.8rem; }
+h2 { margin-top: 2.4rem; }
+header { padding: 1.4rem; background: var(--surface); border: 1px solid var(--line); }
+small,.source { color: var(--muted); }
+nav { display: flex; flex-wrap: wrap; gap: .35rem 1rem; }
+a { color: var(--accent); }
+code { overflow-wrap: anywhere; }
+details { border-bottom: 1px solid var(--line); padding: .8rem 0; }
+summary { cursor: pointer; font-weight: 650; }
+details p,li p { margin: .55rem 0; }
+li { margin: .4rem 0; }
+.source { font-size: .88rem; }
+dt { font-weight: 650; }
+dd { margin: 0 0 .7rem; }
+</style>
+</head>
+<body><main>
+<header>
+<small>24 de novembro de 2026 · main · 05a41ad</small>
+<h1>Análise técnica do textfox-waterfox</h1>
+<p>O fork concentra os ajustes para Waterfox em poucas folhas de estilo e tem o Sine como caminho principal. A cópia no perfil padrão corresponde ao repositório. A prioridade é corrigir o instalador, que pode alterar a instalação antes de detectar um erro no registro do Sine.</p>
+<nav aria-label="Seções"><a href="#arquitetura">Arquitetura</a><a href="#achados">Achados</a><a href="#validacao">Validação</a><a href="#prioridades">Prioridades</a></nav>
+</header>
+<section id="arquitetura">
+<h2>Arquitetura</h2>
+<dl>
+<dt>Interface</dt><dd><code>chrome/userChrome.css</code> reúne folhas por componente, passa por <code>waterfox.css</code> e <code>animations.css</code> e carrega <code>defaults.css</code> seguido de <code>config.css</code>. O fork versiona a configuração pessoal.</dd>
+<dt>Páginas internas</dt><dd><code>chrome/userContent.css</code> estiliza <code>about:</code> e a nova aba, reutilizando a configuração. O <code>theme.json</code> aponta para os dois arquivos de entrada.</dd>
+<dt>Waterfox</dt><dd>O fork estiliza a barra de status, os controles de abas em árvore e as ferramentas da barra lateral. Também evita o encolhimento da barra lateral durante a animação do navegador. A barra de status e as abas em árvore precisam estar habilitadas nas preferências correspondentes.</dd>
+<dt>Temas e movimento</dt><dd>Sob <code>[lwtheme]</code>, as bordas usam <code>toolbar_field_border</code> e o destaque usa <code>tab_line</code>. Abas novas, menus e texto de status respeitam a redução de movimento. As transições de cor permanecem ativas.</dd>
+<dt>Distribuição</dt><dd>O PowerShell copia e registra o mod local do Sine. A cópia manual, os scripts Bash, o Home Manager e o wrapper NixOS seguem caminhos herdados com regras próprias de configuração e remoção.</dd>
+</dl>
+<p class="source">Referências · <code>chrome/userChrome.css:7</code>, <code>chrome/userContent.css:7</code>, <code>chrome/waterfox.css:68</code>, <code>chrome/animations.css:13</code> e <code>theme.json:7</code>. <a href="https://github.com/CosmoCreeper/Sine">Sine</a></p>
+</section>
+<section id="achados">
+<h2>Achados</h2>
+<details open><summary>Alta · O instalador do Sine grava arquivos antes de validar o registro</summary>
+<p>O script remove a pasta <code>chrome</code> da instalação anterior, copia o tema e só depois faz backup e interpreta <code>mods.json</code>. Num perfil fictício com JSON inválido, o comando falhou com o manifesto intacto e o CSS já gravado. Numa atualização, a cópia anterior já terá sido substituída nesse ponto. O backup cobre o manifesto.</p>
+<p>O script também escolhe o primeiro <code>Default=</code> de <code>installs.ini</code>. Nesta máquina havia uma única entrada. Em instalações múltiplas, <code>-ProfilePath</code> identifica o destino explicitamente.</p>
+<p class="source">Teste em perfil fictício · <code>tools/install-sine.ps1:25–31, 41–55, 80–82</code>.</p>
+</details>
+<details open><summary>Alta · A remoção herdada abrange o diretório inteiro do perfil</summary>
+<p><code>tf-uninstall.sh</code> remove todo o <code>chrome/</code> antes de oferecer restauração. Se apontar para um perfil que usa Sine, isso inclui <code>sine-mods</code>. O instalador Bash move o diretório anterior para backup e copia a configuração versionada, embora o README prometa manter a configuração ativa. Ambos os scripts usam sintaxe de Bash e o README indica <code>sh</code>.</p>
+<p>O wrapper NixOS também remove o <code>chrome/</code> quando o marcador da versão está ausente, incluindo arquivos que podem pertencer a outras ferramentas.</p>
+<p class="source">Revisão de código · <code>tf-uninstall.sh:24–29</code>, <code>tf-install.sh:24–38</code>, <code>readme.md:70–82, 260–286</code> e <code>nix/pkgs/wrapTextfox.nix:77–87</code>.</p>
+</details>
+<details open><summary>Alta para usuários Nix · O empacotamento perde parte da edição Waterfox</summary>
+<p>O módulo NixOS referencia <code>policies</code> sem defini-la. O wrapper deixa <code>waterfox.css</code> e <code>animations.css</code> fora da concatenação. Os imports dessas folhas aparecem depois de uma regra CSS e são inválidos nessa posição. O autoconfig referencia <code>FileUtils.jsm</code>, enquanto o pacote Waterfox inspecionado contém <code>FileUtils.sys.mjs</code>. A compatibilidade com o Firefox do flake exige teste próprio.</p>
+<p>Home Manager exporta o <code>config.css</code> versionado pela pasta recursiva e gera outro arquivo com o mesmo destino. A consequência depende da versão e da política de sobreposição. A implementação consultada tem <code>ignore</code> como padrão, caso em que o arquivo da pasta recursiva pode prevalecer.</p>
+<p class="source">Revisão de código · <code>nix/modules/nixos.nix:65–76</code>, <code>nix/pkgs/wrapTextfox.nix:28–60</code> e <code>nix/modules/home-manager.nix:53–64</code>. <a href="https://drafts.csswg.org/css-cascade-5/#at-import">Especificação CSS</a> · <a href="https://github.com/nix-community/home-manager/blob/master/modules/files.nix">Home Manager</a></p>
+</details>
+<details><summary>Média · Um tema sem cor de borda pode apagar os contornos</summary>
+<p>O bloco <code>[lwtheme]</code> substitui a mistura de cores padrão por <code>--toolbar-field-border-color</code>. Quando o navegador fornece <code>transparent</code>, a borda fica invisível. Um fallback simples de <code>var()</code> cobre uma variável ausente, mas <code>transparent</code> é um valor definido. O README descreve essa limitação.</p>
+<p class="source">Revisão de código · <code>chrome/config.css:10–34</code> e <code>readme.md:23–38</code>.</p>
+</details>
+<details><summary>Média · A CI deixa passar falhas de instalação e empacotamento</summary>
+<p>O workflow chama <code>nixfmt-tree</code> em modo de formatação e não verifica a avaliação dos módulos Nix, o instalador ou as referências do CSS. Os utilitários de inspeção procuram o Firefox e consultam a árvore de lançamento no Searchfox. As estruturas exclusivas do Waterfox exigem uma verificação própria.</p>
+<p class="source">Revisão de código · <code>.github/workflows/nix-format-check.yml:9–18</code> e <code>tools/firefox-chrome/firefox-live.sh:44–65</code>. <a href="https://github.com/NixOS/nixfmt#nixfmt-tree">Documentação do formatador</a></p>
+</details>
+</section>
+<section id="validacao">
+<h2>Validação</h2>
+<ul>
+<li><code>main</code> coincide com a referência local de <code>origin/main</code>. São 13 commits e 10 arquivos alterados em relação à referência local de <code>upstream/main</code>. <code>git diff --check</code> passou.</li>
+<li>Os 17 imports e os 90 SVGs distintos referenciados por caminhos relativos existem. As 22 variáveis de <code>defaults.css</code> constam na configuração gerada pelo Nix.</li>
+<li>O perfil padrão registra <code>textfox-waterfox</code> <code>1.0.0-waterfox.1</code> habilitado, com <code>no-updates</code> ativo. Dos 207 arquivos, 205 têm os mesmos bytes e dois diferem apenas nas quebras de linha.</li>
+<li>Em perfil fictício, o script PowerShell fez backup, registrou o mod, desativou o textfox original e preservou outro mod. Um manifesto inválido reproduziu a gravação parcial.</li>
+<li>O pacote Waterfox instalado contém os seletores da barra de status, das abas em árvore e da barra lateral. O processo encerrou antes de responder ao teste em perfil temporário. O Nix estava indisponível e o ambiente bloqueou a execução do Bash. A renderização e a ativação dos módulos seguem sem confirmação.</li>
+</ul>
+</section>
+<section id="prioridades">
+<h2>Ordem de trabalho sugerida</h2>
+<ol>
+<li>Validar o manifesto e preparar a nova cópia antes de substituir o mod. Limitar instalação, remoção e restauração aos arquivos do tema.</li>
+<li>Automatizar os casos de sucesso e falha em perfis fictícios. Conferir no Waterfox as abas em árvore, a barra lateral nos dois tamanhos, tela cheia, um tema sem ATBC e redução de movimento.</li>
+<li>Se Nix fizer parte do suporte do fork, avaliar seus módulos em CI e fazer o empacotamento seguir a ordem de <code>userChrome.css</code>. Corrigir a sobreposição do <code>config.css</code> no Home Manager.</li>
+</ol>
+</section>
+</main></body>
+</html>
