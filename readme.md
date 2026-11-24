@@ -140,6 +140,13 @@ review and save the two existing entry files, then move them aside and launch
 the wrapper. Put additional rules in `textfox.extraUserChrome` and
 `textfox.extraUserContent`.
 
+On Linux, `nix flake check --no-update-lock-file` builds the wrapped Firefox
+with the NixOS module enabled in a test configuration. Use `nix build .#default`
+to build the standalone stylesheet package. Textfox pins Nixpkgs 26.05 for
+the wrapper and preserves the existing Linux and macOS package targets.
+To call the wrapper directly from another flake on
+x86-64 Linux, use `textfox.lib.wrapTextfox.x86_64-linux pkgs.firefox-unwrapped { }`.
+
 To enable the module, add the repo as a flake input, import the module, and enable textfox.
 
 <details><summary>Install using your home-manager module defined within your `nixosConfigurations`:</summary>

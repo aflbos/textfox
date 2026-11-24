@@ -1,4 +1,4 @@
-name: Check Nix Formatting
+name: Check Nix Distribution
 
 on:
   push:
@@ -25,3 +25,7 @@ jobs:
         run: node --test tests/nix-profile.test.mjs
       - name: Test the Nix CSS bundle
         run: bash tests/nix-bundle.sh
+      - name: Evaluate the flake and build the wrapped Firefox
+        run: nix flake check --no-update-lock-file --print-build-logs
+      - name: Build the stylesheet package
+        run: nix build --no-link --no-update-lock-file --print-build-logs .#default

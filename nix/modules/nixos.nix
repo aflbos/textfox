@@ -12,7 +12,7 @@ let
   inherit (lib.trivial) boolToString;
 
   inherit (pkgs.stdenv.hostPlatform) system;
-  wrapTextfox = inputs.self.packages.${system}.wrapTextfox;
+  wrapTextfox = inputs.self.lib.wrapTextfox.${system};
 
   cfg = config.textfox;
 in
