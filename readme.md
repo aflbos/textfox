@@ -57,6 +57,9 @@ _a firefox theme for the tui enthusiast_
 >
 >   A remoção afeta apenas o mod local. Para voltar ao textfox original,
 >   reative-o no painel do Sine.
+> - Se a primeira instalação parar depois de copiar o pacote, feche o Waterfox
+>   e repita o comando para concluir, ou use `-Uninstall` para cancelar.
+>   Use o mesmo perfil e o mesmo `-ModId` da primeira tentativa.
 > - A pasta `chrome\textfox-sine-backups` guarda um diretório por operação, com
 >   o registro anterior em `mods.json` e o pacote substituído em `previous/`,
 >   quando ele existia. Se precisar recuperar uma versão, feche o Waterfox e

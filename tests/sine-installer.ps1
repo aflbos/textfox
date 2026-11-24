@@ -169,6 +169,34 @@ $cases = [ordered]@{
     & $installer -ProfilePath $profile.Path -ModId $id -Uninstall
     Assert-True ($null -eq (Get-Manifest $profile).$id) "O registro personalizado continuou ativo."
   }
+  "Primeira instalação interrompida permite retomar ou cancelar" = {
+    $copy = New-InstallerCopy "interrupted-source"
+    $source = [IO.File]::ReadAllText($copy)
+    $published = '$newMoved = $true'
+    Assert-True ($source.Contains($published)) "O ponto de interrupção não está no instalador."
+    [IO.File]::WriteAllText($copy, $source.Replace($published, "$published`n    [Environment]::Exit(86)"), [Text.UTF8Encoding]::new($true))
+    $shell = (Get-Process -Id $PID).Path
+    foreach ($cancel in $false, $true) {
+      $profile = New-Profile "interrupted-$cancel" $original
+      $id = "meu-textfox"
+      $dest = Join-Path $profile.Mods $id
+      & $shell -NoProfile -ExecutionPolicy Bypass -File $copy -ProfilePath $profile.Path -ModId $id
+      Assert-True ($LASTEXITCODE -eq 86 -and [IO.Directory]::Exists($dest)) "O processo não parou após publicar o pacote."
+      Assert-True ([IO.File]::ReadAllText($profile.Manifest) -ceq $original) "O registro mudou antes da interrupção."
+      # Sine can change another mod between attempts; recovery must use the current registry.
+      $latest = $original.Replace('"value":7', '"value":9')
+      [IO.File]::WriteAllText($profile.Manifest, $latest)
+      & $installer -ProfilePath $profile.Path -ModId $id -Uninstall:$cancel
+      if ($cancel) {
+        Assert-True (-not [IO.Directory]::Exists($dest)) "O pacote parcial continuou ativo."
+        Assert-True ([IO.File]::ReadAllText($profile.Manifest) -ceq $latest) "Cancelar mudou o registro."
+      } else {
+        $data = Get-Manifest $profile
+        Assert-True ($data.$id.enabled -and $data.outro.extra.value -eq 9) "A retomada perdeu dados do registro."
+        Assert-True ([IO.File]::Exists((Join-Path $dest $data.$id.style.chrome))) "O pacote retomado está incompleto."
+      }
+    }
+  }
   "Pasta sem registro e execução concorrente" = {
     $profile = New-Profile "busy" '{}'
     $lock = [IO.File]::Open((Join-Path $profile.Mods ".textfox-sine.lock"), "OpenOrCreate", "ReadWrite", "None")
@@ -184,6 +212,16 @@ $cases = [ordered]@{
     Assert-Throws { & $installer -ProfilePath $profile.Path } 'pasta .+ existe'
     Assert-Throws { & $installer -ProfilePath $profile.Path -Uninstall } 'pasta .+ existe'
     Assert-True ((Test-Path -LiteralPath $unregistered) -and [IO.File]::ReadAllText($profile.Manifest) -ceq '{}') "A pasta sem registro foi alterada."
+  }
+  "Comprovante de uma instalação concluída não autoriza remover pasta sem registro" = {
+    $profile = New-Profile "completed-receipt" '{}'
+    & $installer -ProfilePath $profile.Path
+    [IO.File]::WriteAllText($profile.Manifest, '{}')
+    foreach ($cancel in $false, $true) {
+      Assert-Throws { & $installer -ProfilePath $profile.Path -Uninstall:$cancel } 'publicação pendente'
+    }
+    Assert-True ([IO.File]::Exists((Join-Path $profile.Mod "theme.json"))) "O pacote foi movido."
+    Assert-True ([IO.File]::ReadAllText($profile.Manifest) -ceq '{}') "O registro foi alterado."
   }
   "Seleção ambígua e caminho absoluto do perfil" = {
     $profile = New-Profile "with [special]" '{}'

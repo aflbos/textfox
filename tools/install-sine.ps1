@@ -98,6 +98,8 @@ $modsDir = Join-Path $chromeDir "sine-mods"
 $modsJson = Join-Path $modsDir "mods.json"
 $dest = Join-Path $modsDir $ModId
 $lockPath = Join-Path $modsDir ".textfox-sine.lock"
+$backups = Join-Path $chromeDir "textfox-sine-backups"
+$receipt = ".textfox-first-install"
 
 Assert-RegularPath $chromeDir -Directory
 Assert-RegularPath $modsDir -Directory
@@ -127,11 +129,26 @@ try {
     throw "O identificador '$ModId' pertence a outro mod no registro do Sine."
   }
   Assert-RegularPath $dest -Directory
+  Assert-RegularPath $backups -Directory
   $hasPackage = Test-Path -LiteralPath $dest -PathType Container
   if (-not $existing -and $hasPackage) {
-    throw "A pasta $dest já existe e não pertence a um mod local registrado por este script."
+    # A first install moves the package before File.Replace consumes mods.new.json.
+    # Link both halves of that unfinished operation before touching an unregistered folder.
+    $marker = Join-Path $dest $receipt
+    Assert-RegularPath $marker
+    if (-not [IO.File]::Exists($marker) -or
+        [IO.File]::ReadAllText($marker) -notmatch "\A${ModId}/([0-9]{8}-[0-9]{6}-[0-9]{3}-[a-f0-9]{32})\z") {
+      throw "A pasta $dest já existe e não tem comprovante de instalação pendente."
+    }
+    $pendingRun = Join-Path $backups $Matches[1]
+    Assert-RegularPath $pendingRun -Directory
+    $pendingRegistry = Join-Path $pendingRun "mods.new.json"
+    Assert-RegularPath $pendingRegistry
+    if (-not [IO.File]::Exists($pendingRegistry)) {
+      throw "A pasta $dest já existe e não há publicação pendente para ela."
+    }
   }
-  if ($existing) {
+  if ($existing -or $hasPackage) {
     # ModId identifies the registry slot. The shipped manifest keeps the
     # package identity even when an older installation used a custom ModId.
     $manifest = Join-Path $dest "theme.json"
@@ -143,6 +160,12 @@ try {
     if ($installed.id -isnot [string] -or $installed.id -cne $packageId) {
       throw "O pacote em $dest pertence a outro mod."
     }
+  }
+  if (-not $existing -and $hasPackage) {
+    # Return the unpublished package to its own backup. Never replay a stale registry.
+    [IO.Directory]::Move($dest, (Join-Path $pendingRun "staged"))
+    $hasPackage = $false
+    Write-Host "Pacote da instalação interrompida arquivado em $pendingRun."
   }
   if ($Uninstall -and -not $existing) {
     Write-Host "O mod local '$ModId' já está ausente."
@@ -183,8 +206,6 @@ try {
     }
   }
 
-  $backups = Join-Path $chromeDir "textfox-sine-backups"
-  Assert-RegularPath $backups -Directory
   $runId = "$(Get-Date -Format 'yyyyMMdd-HHmmss-fff')-$([guid]::NewGuid().ToString('N'))"
   $run = Join-Path $backups $runId
   $staged = Join-Path $run "staged"
@@ -199,6 +220,9 @@ try {
     Copy-Item -LiteralPath (Join-Path $repo "chrome") -Destination (Join-Path $staged "chrome") -Recurse
     foreach ($name in "theme.json", "user.js", "LICENSE") {
       Copy-Item -LiteralPath (Join-Path $repo $name) -Destination $staged
+    }
+    if (-not $existing) {
+      [IO.File]::WriteAllText((Join-Path $staged $receipt), "$ModId/$runId", $utf8)
     }
     foreach ($sheet in $theme.style.chrome, $theme.style.content) {
       if (-not (Test-Path -LiteralPath (Join-Path $staged $sheet) -PathType Leaf)) {
