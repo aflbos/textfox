@@ -17,19 +17,17 @@
   --tf-accent: var(--toolbarbutton-icon-fill);
 }
 
-/* Com um tema ativo (o Adaptive Tab Bar Colour aplica um a cada página), as
-   cores dos contornos vêm do tema e são ajustadas no "Theme builder" da
-   extensão:
-     - contorno normal: URL bar → Border (toolbar_field_border);
-     - destaque: Selected tab → Border (tab_line).
-   Sem o valor do contorno normal no tema, o Firefox usa "transparent" e os
-   contornos somem: desligar a extensão exige remover este bloco. */
-:root[lwtheme] {
+/* O Gecko escreve toolbar_field_border no style de :root. Quando o tema
+   omite a cor, o Gecko grava rgba(0, 0, 0, 0) nesse mesmo atributo. Ignore
+   esse valor padrão para manter o contorno calculado acima. */
+:root[lwtheme][style*="--toolbar-field-border-color:"]:not(
+  [style*="--toolbar-field-border-color: rgba(0, 0, 0, 0);"]
+) {
   --tf-border: var(--toolbar-field-border-color);
+}
 
-  /* Destaque (hover/foco): a borda da aba selecionada do tema (tab_line),
-     que o Adaptive Tab Bar Colour também deriva da cor da página. Sem esse
-     valor no tema, volta para a cor dos ícones. */
+/* Usa tab_line do tema ativo, com a cor dos ícones como padrão. */
+:root[lwtheme] {
   --tf-accent: var(--lwt-tab-line-color, var(--toolbarbutton-icon-fill));
 }
 

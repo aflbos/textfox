@@ -34,8 +34,9 @@ _a firefox theme for the tui enthusiast_
 >   o contorno só aparece se o seu valor ficar acima desse. Para o destaque se
 >   distinguir, use em Selected tab → Border um valor maior que o de
 >   URL bar → Border.
->   Sem a extensão, o tema não define `toolbar_field_border` e os contornos ficam
->   transparentes: remova o bloco `:root[lwtheme]` de `config.css`.
+>   Se o tema não definir `toolbar_field_border`, o contorno volta a usar
+>   uma mistura da cor de fundo com a dos ícones. O destaque usa a cor dos
+>   ícones quando o tema não fornece `tab_line`.
 > - Feche o Waterfox antes de instalar, atualizar ou remover o mod. Com o Sine
 >   já instalado, use o comando abaixo para instalar ou atualizar no perfil
 >   padrão. Se houver mais de um perfil padrão, indique o caminho do perfil
