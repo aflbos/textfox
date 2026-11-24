@@ -164,6 +164,30 @@ publish() {
   move_without_replace "$pending/$name" "$(active_path "$name")"
 }
 
+config_is_unmodified() {
+  local config="$package/config.css" baseline="$package/.textfox-default-config.css" digest
+  [[ -f "$config" && ! -L "$config" ]] || return 1
+  if path_exists "$baseline"; then
+    [[ -f "$baseline" && ! -L "$baseline" ]] && cmp -s "$baseline" "$config"
+    return
+  fi
+
+  # Managed releases before baselines shipped two defaults (0781c3c and
+  # b5652e7). Match only those exact bytes, with either Git checkout EOL.
+  if command -v sha256sum >/dev/null; then
+    digest=$(sha256sum < "$config") || return 1
+  elif command -v shasum >/dev/null; then
+    digest=$(shasum -a 256 < "$config") || return 1
+  else
+    return 1
+  fi
+  case "${digest%% *}" in
+    1bcaee64f8e64944f7bb26d0e000e7e3124f02fb4d0048e913a8db866c103c5f|113742c58271d2e7378ba9040cf8e1a732c7ca3b8759c837e0ba448d66a03cac) return 0 ;;
+    f30b83488f9bc7fb9115f4c36e4cdb659a629505ec96ea3f6fec38419e3555c8|cd992a14491780f9a462fa627d56595e820949e2a99fc983ac34efab337072cc) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 if [[ "$operation" == uninstall ]]; then
   for name in userChrome.css userContent.css; do
     if is_owned_entry_point "$name"; then
@@ -184,7 +208,8 @@ fi
 
 cp -R -- "$repo/chrome" "$pending/textfox"
 printf '%s\n' "$marker" > "$pending/textfox/.textfox-managed"
-if $managed && path_exists "$package/config.css"; then
+cp -- "$pending/textfox/config.css" "$pending/textfox/.textfox-default-config.css"
+if $managed && path_exists "$package/config.css" && ! config_is_unmodified; then
   cp -P -- "$package/config.css" "$pending/textfox/config.css"
 fi
 

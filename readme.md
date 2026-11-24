@@ -101,7 +101,8 @@ If a first installation finds a stylesheet at either entry point, it stops.
 This also covers older textfox installations that placed the full CSS in
 `chrome/`. Review and save the existing entry points before migrating, or
 use the manual instructions to combine styles. On subsequent updates, the
-script keeps your `chrome/textfox/config.css` and archives the old package
+script updates `chrome/textfox/config.css` when it matches the previously
+installed default. It keeps personal edits and archives the previous package
 under `chrome/textfox-backups/`.
 
 ### Manual

@@ -186,3 +186,36 @@ check grep -qx 'other writer' "$profile/chrome/textfox/keep"
 check test ! -e "$profile/chrome/textfox/textfox"
 check test ! -e "$profile/chrome/userChrome.css"
 printf 'PASS %s\n' "$scenario"
+
+scenario="Updates replace bundled configuration and retain edits across releases"
+release="$root/release"
+profile="$root/config-upgrade"
+mkdir -p "$release/tools" "$profile"
+cp -R "$repo/chrome" "$release/"
+cp "$repo/tf-install.sh" "$repo/user.js" "$release/"
+cp "$repo/tools/profile-installer.sh" "$release/tools/"
+config="$profile/chrome/textfox/config.css"
+printf '/* first release */\n' > "$release/chrome/config.css"
+check bash "$release/tf-install.sh" "$profile" </dev/null
+printf '/* second release */\n' > "$release/chrome/config.css"
+check bash "$release/tf-install.sh" "$profile" </dev/null
+check cmp -s "$config" "$release/chrome/config.css"
+printf '/* personal edit */\n' >> "$config"
+cp "$config" "$root/personal.css"
+printf '/* third release */\n' > "$release/chrome/config.css"
+check bash "$release/tf-install.sh" "$profile" </dev/null
+check cmp -s "$config" "$root/personal.css"
+check bash "$release/tf-install.sh" "$profile" </dev/null
+check cmp -s "$config" "$root/personal.css"
+printf 'PASS %s\n' "$scenario"
+
+scenario="Unknown legacy configuration survives the first baseline and later updates"
+rm -- "$profile/chrome/textfox/.textfox-default-config.css"
+printf '/* older personal config */\n' > "$config"
+cp "$config" "$root/legacy-personal.css"
+check bash "$release/tf-install.sh" "$profile" </dev/null
+check cmp -s "$config" "$root/legacy-personal.css"
+check cmp -s "$profile/chrome/textfox/.textfox-default-config.css" "$release/chrome/config.css"
+check bash "$release/tf-install.sh" "$profile" </dev/null
+check cmp -s "$config" "$root/legacy-personal.css"
+printf 'PASS %s\n' "$scenario"
