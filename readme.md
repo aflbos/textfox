@@ -134,7 +134,12 @@ under `chrome/textfox-backups/`.
 ### Nix
 
 This repo includes Home Manager and NixOS modules. Home Manager links the
-stylesheets and generates `config.css` from `textfox.config`.
+stylesheets and generates `config.css` from `textfox.config`. List the Home
+Manager profile keys in `textfox.profiles`. For example, if
+`programs.firefox.profiles.work.path = "abc.work"`, use `"work"` in the
+list. Textfox installs in `abc.work/chrome`. The profile's `userChrome`
+and `userContent` styles load after the theme and can be inline CSS or Nix
+file paths.
 
 The NixOS wrapper installs two generated entry files in the Firefox profile.
 It updates its own unedited files and keeps other files in `chrome/`. If it
@@ -168,9 +173,9 @@ To enable the module, add the repo as a flake input, import the module, and enab
            inputs.nixpkgs.follows = "nixpkgs";
          };
 
-         textfox.url = "github:adriankarlen/textfox";
+         textfox.url = "github:aflbos/textfox";
          # ---Snip---
-      }
+      };
 
       outputs = {nixpkgs, home-manager, ...} @ inputs: {
           nixosConfigurations.HOSTNAME = nixpkgs.lib.nixosSystem {
@@ -185,7 +190,7 @@ To enable the module, add the repo as a flake input, import the module, and enab
               }
            ];
         };
-     }
+     };
   }
 ```
 ```nix
@@ -196,7 +201,7 @@ imports = [ inputs.textfox.homeManagerModules.default ];
 
 textfox = {
     enable = true;
-    # Replace with the names of profiles, defined in home-manager, or find existing ones in `about:profiles`
+    # Use the keys from programs.firefox.profiles.
     profiles = ["profile_1" "profile_2"];
     config = {
         # Optional config
@@ -219,11 +224,11 @@ textfox = {
          inputs.nixpkgs.follows = "nixpkgs";
        };
 
-       textfox.url = "github:adriankarlen/textfox";
+       textfox.url = "github:aflbos/textfox";
        # ---Snip---
-    }
+    };
 
-    outputs = {nixpkgs, home-manager, textfox ...}: {
+    outputs = {nixpkgs, home-manager, textfox, ...}: {
         homeConfigurations."user@hostname" = home-manager.lib.homeManagerConfiguration {
             pkgs = nixpkgs.legacyPackages.x86_64-linux;
 
@@ -241,7 +246,7 @@ textfox = {
 
   textfox = {
       enable = true;
-      # Replace with the names of profiles, defined in home-manager, or find existing ones in `about:profiles`
+      # Use the keys from programs.firefox.profiles.
       profiles = ["profile_1" "profile_2"];
       config = {
           # Optional config
@@ -258,7 +263,7 @@ All configuration options are optional and can be set as this example shows (rea
 
   textfox = {
       enable = true;
-      # Replace with the names of profiles, defined in home-manager, or find existing ones in `about:profiles`
+      # Use the keys from programs.firefox.profiles.
       profiles = ["profile_1" "profile_2"];
       config = {
         background = {

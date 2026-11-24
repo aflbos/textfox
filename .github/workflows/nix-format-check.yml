@@ -25,6 +25,8 @@ jobs:
         run: node --test tests/nix-profile.test.mjs
       - name: Test the Nix CSS bundle
         run: bash tests/nix-bundle.sh
+      - name: Build Home Manager profiles with custom paths and styles
+        run: nix build --impure --no-link --print-build-logs --file tests/home-manager.nix
       - name: Evaluate the flake and build the wrapped Firefox
         run: nix flake check --no-update-lock-file --print-build-logs
       - name: Build the stylesheet package

@@ -1,18 +1,61 @@
-inputs:
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
-  inherit (pkgs.stdenv.hostPlatform) system;
-  package = inputs.self.packages.${system}.default;
-  configDir =
-    "${config.programs.firefox.configPath}/"
-    + (lib.optionalString pkgs.stdenv.hostPlatform.isDarwin "Profiles/");
-
   cfg = config.textfox;
+  firefox = config.programs.firefox;
+  assets = lib.cleanSourceWith {
+    src = ../../chrome;
+    filter =
+      path: _:
+      !builtins.elem (baseNameOf path) [
+        "userChrome.css"
+        "userContent.css"
+        "config.css"
+      ];
+  };
+
+  profileFiles =
+    name:
+    let
+      profile = firefox.profiles.${name};
+      chrome = "${firefox.profilesPath}/${profile.path}/chrome";
+      entryFiles =
+        option:
+        let
+          file = "${option}.css";
+          custom = profile.${option} != "";
+        in
+        {
+          "${chrome}/textfox-${file}".source = ../../chrome + "/${file}";
+          # Keep Home Manager's text or path source intact, beside the entry
+          # point so relative URLs and imports in the user's CSS still resolve.
+          "${chrome}/${file}" = lib.mkIf custom { target = "${chrome}/profile-${file}"; };
+          "${chrome}/textfox-entry-${file}" = {
+            target = "${chrome}/${file}";
+            text =
+              ''
+                @import url("textfox-${file}");
+              ''
+              + lib.optionalString custom ''
+                @import url("profile-${file}");
+              '';
+          };
+        };
+    in
+    lib.mkMerge [
+      {
+        "${chrome}" = {
+          source = assets;
+          recursive = true;
+        };
+        "${chrome}/config.css".text = cfg.configCss;
+      }
+      (entryFiles "userChrome")
+      (entryFiles "userContent")
+    ];
 in
 {
 
@@ -41,33 +84,11 @@ in
       enable = true;
       profiles = lib.mkMerge (
         map (profile: {
-          "${profile}" = {
-            extraConfig = builtins.readFile "${package}/user.js";
-            userChrome = lib.mkBefore (builtins.readFile "${package}/chrome/userChrome.css");
-          };
+          "${profile}".extraConfig = builtins.readFile ../../user.js;
         }) cfg.profiles
       );
     };
 
-    home.file = lib.mkMerge (
-      map (profile: {
-        "${configDir}${profile}/chrome" = {
-          source = pkgs.lib.cleanSourceWith {
-            src = "${package}/chrome";
-            # These entry points are generated separately by Home Manager.
-            filter =
-              path: _:
-              !builtins.elem (baseNameOf path) [
-                "userChrome.css"
-                "config.css"
-              ];
-          };
-          recursive = true;
-        };
-        "${configDir}${profile}/chrome/config.css" = {
-          text = cfg.configCss;
-        };
-      }) cfg.profiles
-    );
+    home.file = lib.mkMerge (map profileFiles cfg.profiles);
   };
 }

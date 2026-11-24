@@ -31,7 +31,7 @@
       nixosModules.textfox = import ./nix/modules/nixos.nix inputs;
 
       homeManagerModules.default = self.homeManagerModules.textfox;
-      homeManagerModules.textfox = import ./nix/modules/home-manager.nix inputs;
+      homeManagerModules.textfox = import ./nix/modules/home-manager.nix;
 
       checks = nixpkgs.lib.genAttrs linuxSystems (
         system:
