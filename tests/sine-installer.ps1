@@ -145,6 +145,30 @@ $cases = [ordered]@{
     Assert-Throws { & $installer -ProfilePath $profile.Path -Uninstall } 'outro mod'
     Assert-True ([IO.File]::ReadAllText($profile.Manifest) -ceq $before) "Um mod alheio foi sobrescrito."
   }
+  "Mod local com os mesmos caminhos CSS continua intacto" = {
+    $id = "outro-local"
+    $json = '{"outro-local":{"id":"outro-local","homepage":"","style":{"chrome":"chrome/userChrome.css","content":"chrome/userContent.css"}}}'
+    $profile = New-Profile "local-collision" $json
+    $package = Join-Path $profile.Mods $id
+    [IO.Directory]::CreateDirectory($package) | Out-Null
+    $manifest = Join-Path $package "theme.json"
+    $foreign = '{"id":"outro-local","name":"Outro tema"}'
+    [IO.File]::WriteAllText($manifest, $foreign)
+    foreach ($remove in $false, $true) {
+      Assert-Throws { & $installer -ProfilePath $profile.Path -ModId $id -Uninstall:$remove } 'outro mod'
+      Assert-True ([IO.File]::ReadAllText($manifest) -ceq $foreign) "O pacote alheio mudou."
+      Assert-True ([IO.File]::ReadAllText($profile.Manifest) -ceq $json) "O registro alheio mudou."
+    }
+    Assert-True (-not (Test-Path -LiteralPath $profile.Backups)) "A colisão criou um backup."
+  }
+  "Atualização e remoção com identificador personalizado" = {
+    $profile = New-Profile "custom-id" '{}'
+    $id = "meu-textfox"
+    & $installer -ProfilePath $profile.Path -ModId $id
+    & $installer -ProfilePath $profile.Path -ModId $id
+    & $installer -ProfilePath $profile.Path -ModId $id -Uninstall
+    Assert-True ($null -eq (Get-Manifest $profile).$id) "O registro personalizado continuou ativo."
+  }
   "Pasta sem registro e execução concorrente" = {
     $profile = New-Profile "busy" '{}'
     $lock = [IO.File]::Open((Join-Path $profile.Mods ".textfox-sine.lock"), "OpenOrCreate", "ReadWrite", "None")

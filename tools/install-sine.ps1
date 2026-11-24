@@ -25,6 +25,7 @@ param(
 $ErrorActionPreference = "Stop"
 $utf8 = [Text.UTF8Encoding]::new($false, $true)
 $repo = Split-Path -Parent $PSScriptRoot
+$packageId = "textfox-waterfox"
 
 function Get-DefaultProfile {
   $root = Join-Path $env:APPDATA "Waterfox"
@@ -130,6 +131,19 @@ try {
   if (-not $existing -and $hasPackage) {
     throw "A pasta $dest já existe e não pertence a um mod local registrado por este script."
   }
+  if ($existing) {
+    # ModId identifies the registry slot. The shipped manifest keeps the
+    # package identity even when an older installation used a custom ModId.
+    $manifest = Join-Path $dest "theme.json"
+    Assert-RegularPath $manifest
+    if (-not [IO.File]::Exists($manifest)) {
+      throw "Não foi possível confirmar a identidade de '$ModId': falta $manifest."
+    }
+    $installed = Get-Content -LiteralPath $manifest -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($installed.id -isnot [string] -or $installed.id -cne $packageId) {
+      throw "O pacote em $dest pertence a outro mod."
+    }
+  }
   if ($Uninstall -and -not $existing) {
     Write-Host "O mod local '$ModId' já está ausente."
     return
@@ -140,10 +154,11 @@ try {
     $mods.PSObject.Properties.Remove($ModId)
   } else {
     $theme = Get-Content -LiteralPath (Join-Path $repo "theme.json") -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($theme.name -isnot [string] -or [string]::IsNullOrWhiteSpace($theme.name) -or
+    if ($theme.id -isnot [string] -or $theme.id -cne $packageId -or
+        $theme.name -isnot [string] -or [string]::IsNullOrWhiteSpace($theme.name) -or
         $theme.version -isnot [string] -or [string]::IsNullOrWhiteSpace($theme.version) -or
         $theme.style.chrome -cne "chrome/userChrome.css" -or $theme.style.content -cne "chrome/userContent.css") {
-      throw "O theme.json precisa declarar o nome, a versão e os dois caminhos CSS do textfox."
+      throw "O theme.json precisa declarar o ID do textfox, o nome, a versão e os dois caminhos CSS."
     }
     $entry = [ordered]@{
       style        = [ordered]@{ chrome = $theme.style.chrome; content = $theme.style.content }
