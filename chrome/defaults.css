@@ -8,7 +8,7 @@
   --tf-border-width: 2px; /* Width of borders */
   --tf-rounding: 0px; /* Border radius used through out the config */
   --tf-text-transform: none; /* Text transform to use */
-  --tf-display-horizontal-tabs: none; /* If horizontal tabs should be shown, none = hidden, block = shown */
+  --tf-display-horizontal-tabs: block; /* Hide with none when using an extension tab bar. */
   --tf-display-window-controls: none; /* If the window controls should be shown (won't work with sidebery and hidden horizontal tabs), none = hidden, flex = shown */
   --tf-display-nav-buttons: none; /* If the navigation buttons (back, forward) should be shown, none = hidden, flex = shown */
   --tf-display-urlbar-icons: none; /* If the icons inside the url bar should be shown, none = hidden, flex = shown */
@@ -23,4 +23,10 @@
   --tf-statusbar-margin: 6px 8px 8px; /* margin of the Waterfox status bar */
   --tf-statusbar-padding: 4px; /* padding of the Waterfox status bar */
   --tf-animation-duration: 150ms; /* duration of tab, urlbar, status and menu animations */
+}
+
+@media -moz-pref("sidebar.verticalTabs") {
+  :root {
+    --tf-display-horizontal-tabs: none;
+  }
 }

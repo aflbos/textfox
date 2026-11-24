@@ -169,8 +169,11 @@ def check_status_and_motion(execute):
     assert start["tabAnimation"] == "tf-tab-in" and start["labelTransition"] == "0.15s", start
 
     execute("Services.prefs.setIntPref('ui.prefersReducedMotion', 1);")
-    reduced = wait_for(lambda: execute(STATUS), lambda item: item["reduced"], "reduced motion")
-    assert reduced["tabAnimation"] == "none" and reduced["labelTransition"] == "0s", reduced
+    wait_for(
+        lambda: execute(STATUS),
+        lambda item: item["reduced"] and item["tabAnimation"] == "none" and item["labelTransition"] == "0s",
+        "reduced-motion styles did not take effect",
+    )
     print("PASS reduced-motion preference disables the tab and status animations")
 
     execute("window.fullScreen = true;")
@@ -182,11 +185,20 @@ def check_status_and_motion(execute):
 
 def main():
     browser = browser_argument(__doc__)
+    tab_height = "return gBrowser.selectedTab.getBoundingClientRect().height;"
+    with gecko_profile(browser, theme_dir=ROOT) as (_, _, execute):
+        assert not execute("return Services.prefs.getBoolPref('sidebar.verticalTabs', false);")
+        assert execute(tab_height) > 0, "Selected horizontal tab is invisible in a fresh profile"
+        execute("document.documentElement.style.setProperty('--tf-display-horizontal-tabs', 'none');")
+        assert execute(tab_height) == 0, "Explicit horizontal tab override was ignored"
+        print("PASS fresh profile shows horizontal tabs and respects explicit hiding")
     with gecko_profile(browser, preferences=PREFERENCES, theme_dir=ROOT) as (_, _, execute):
         info = execute("return [Services.appinfo.name, Services.appinfo.version];")
         if info[0].lower() != "waterfox":
             raise RuntimeError(f"This test requires Waterfox, received {info[0]}.")
         print(f"Waterfox {info[1]}")
+        assert execute(tab_height) > 0, "Selected vertical tab is invisible"
+        assert execute("return document.getElementById('TabsToolbar').getBoundingClientRect().height;") == 0
         check_colors(execute)
         check_sidebar(execute)
         check_status_and_motion(execute)

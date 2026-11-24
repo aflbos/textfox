@@ -111,7 +111,11 @@ in
       };
 
       tabs = {
-        horizontal.enable = mkEnableOption "display of horizontal tabs.";
+        horizontal.enable = mkOption {
+          type = lib.types.nullOr bool;
+          default = null;
+          description = "Show the horizontal tab bar. By default, follow the browser's tab orientation.";
+        };
         vertical.enable = mkEnableOption "display of vertical tabs." // {
           default = true;
         };
@@ -183,7 +187,7 @@ in
           --tf-border-width: ${cfg.border.width};
           --tf-rounding: ${cfg.border.radius};
           --tf-text-transform: ${cfg.textTransform};
-          --tf-display-horizontal-tabs: ${if cfg.tabs.horizontal.enable then "block" else "none"};
+          ${lib.optionalString (cfg.tabs.horizontal.enable != null) "--tf-display-horizontal-tabs: ${if cfg.tabs.horizontal.enable then "block" else "none"};"}
           --tf-display-window-controls: ${if cfg.displayWindowControls then "flex" else "none"};
           --tf-display-nav-buttons: ${if cfg.displayNavButtons then "flex" else "none"};
           --tf-display-urlbar-icons: ${if cfg.displayUrlbarIcons then "flex" else "none"};

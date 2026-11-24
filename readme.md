@@ -118,8 +118,8 @@ under `chrome/textfox-backups/`.
 7. Restart Firefox.
 
 > [!IMPORTANT]
-> textfox now supports horizontal tabs, to enable them change the
-> `--tf-display-horizontal-tabs` variable in your `config.css` to `block`. See
+> Textfox follows the browser's tab orientation by default. If you use an extension
+> for tabs, set `--tf-display-horizontal-tabs` to `none` in your `config.css`. See
 > [CSS configurations](#css-configurations) for more info.
 
 > [!NOTE]
@@ -351,7 +351,7 @@ The theme ships with a `defaults.css`. Its values can be overridden in
   --tf-border-width: 2px; /* Width of borders */
   --tf-rounding: 0px; /* Border radius used through out the config */
   --tf-text-transform: none; /* Text transform to use */
-  --tf-display-horizontal-tabs: none; /* If horizontal tabs should be shown, none = hidden, block = shown */
+  /* --tf-display-horizontal-tabs: none; */ /* Optional: hide horizontal tabs when using an extension. */
   --tf-display-window-controls: none; /* If the window controls should be shown (won't work with sidebery and hidden horizontal tabs), none = hidden, flex = shown */ 
   --tf-display-nav-buttons: none; /* If the navigation buttons (back, forward) should be shown, none = hidden, flex = shown */
   --tf-display-urlbar-icons: none; /* If the icons inside the url bar should be shown, none = hidden, flex = shown */
