@@ -85,7 +85,8 @@ function installTextfoxProfile(storePath) {
         return;
       }
 
-      const source = new FileUtils.File(storePath + "/" + name);
+      const source = new FileUtils.File(storePath);
+      source.append(name);
       const next = managedDigest(source);
       if (!next) throw new Error("Invalid Nix package stylesheet " + name);
       if (previous !== next) {

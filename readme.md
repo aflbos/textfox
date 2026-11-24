@@ -504,6 +504,19 @@ sh tools/firefox-chrome/firefox-live.sh --vanilla nav-bar
 > Live inspection needs a display; on headless Linux prefix the command with
 > `xvfb-run -a`.
 
+### Test the Nix profile installer in Gecko
+
+The integration test uses Python 3.10 or later and an installed Firefox or
+Waterfox. It runs offline in a new temporary profile and verifies file creation,
+managed upgrades and conflict handling through Gecko's native file APIs.
+
+```powershell
+python tests/nix-profile-gecko.py "C:\Program Files\Waterfox\waterfox.exe"
+```
+
+Use the path to your browser executable. Testing the NixOS package and its
+startup configuration requires running the wrapped Firefox on NixOS.
+
 ## Community
 
 Join [#textfox:matrix.org](https://matrix.to/#/#textfox:matrix.org) for support and discussion.
