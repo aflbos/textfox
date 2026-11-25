@@ -754,13 +754,25 @@ const eventAt = (type, tab, offset) => {
     screenX: window.mozInnerScreenX + x, screenY: window.mozInnerScreenY + y,
   });
 };
-first.dispatchEvent(eventAt("dragstart", first, 0.5));
+first.dispatchEvent(eventAt("dragstart", first, 0.9));
 transfer.dropEffect = "move";
-third.dispatchEvent(eventAt("dragover", third, 0.9));
-window.textfoxTestDrag = { first, second, third, eventAt };
+const centeredOver = eventAt("dragover", second, 0.55);
+second.dispatchEvent(centeredOver);
+window.textfoxTestDrag = { first, second, third, eventAt, centeredOver };
 return gBrowser.tabContainer.hasAttribute("movingtab");
 """)
     assert started, orientation
+    wait_for(lambda: execute("""
+const { first, centeredOver } = window.textfoxTestDrag;
+const box = first.getBoundingClientRect();
+return arguments[0] === "vertical"
+  ? centeredOver.clientY - (box.top + box.height / 2)
+  : centeredOver.clientX - (box.left + box.width / 2);
+""", orientation), lambda offset: abs(offset) < 1, f"centered {orientation} drag")
+    execute("""
+const { third, eventAt } = window.textfoxTestDrag;
+third.dispatchEvent(eventAt("dragover", third, 0.9));
+""")
     result = wait_for(
         lambda: execute("""
 const indicator = document.getElementById("textfox-tab-drop-position");
@@ -778,7 +790,7 @@ return {
     : (drag.dropBefore ? target.left : target.right),
 };
 """),
-        bool,
+        lambda marker: abs(marker["edge"] - marker["expected"]) < 1,
         f"native {orientation} drag indicator",
     )
     assert result["axis"] == orientation and result["thickness"] == 3, result
@@ -827,7 +839,7 @@ gBrowser.removeTab(third, { animate: false });
 delete window.textfoxTestDrag;
 """)
     assert execute('return document.getElementById("textfox-tab-drop-position").hidden;')
-    print(f"PASS {orientation} drag shows the native drop edge and clears the marker on drop")
+    print(f"PASS {orientation} drag stays centered, highlights the native drop edge and clears on drop")
 
 
 def main():

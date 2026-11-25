@@ -22,16 +22,39 @@
     indicator.hidden = true;
   }
 
+  const dragAndDrop = tabs.tabDragAndDrop;
+  const updateTabStyles = dragAndDrop?._updateTabStylesOnDrag;
+  const centeredDrags = new WeakSet();
+
+  function centerDraggedTab(dragged, dropEffect) {
+    const result = updateTabStyles.call(this, dragged, dropEffect);
+    const data = dragged._dragData;
+    if (dropEffect === "move" && dragged.classList.contains("tabbrowser-tab") &&
+        dragged.hasAttribute("dragtarget") && data && !centeredDrags.has(data)) {
+      // Gecko positions the dragged tab absolutely before translating it.
+      // Read its center after that layout change and keep detachment offsets.
+      const rect = dragged.getBoundingClientRect();
+      data.screenX = dragged.screenX + rect.width / 2;
+      data.screenY = dragged.screenY + rect.height / 2;
+      centeredDrags.add(data);
+    }
+    return result;
+  }
+
+  if (typeof updateTabStyles === "function") {
+    dragAndDrop._updateTabStylesOnDrag = centerDraggedTab;
+  }
+
   function showPosition(dragged) {
     const data = dragged._dragData;
     const target = data?.dropElement;
-    if (!tabs.hasAttribute("movingtab") || !target?.isConnected || typeof data.dropBefore !== "boolean") {
-      return;
+    if (!target?.isConnected || typeof data.dropBefore !== "boolean") {
+      return false;
     }
 
     const item = target.getBoundingClientRect();
     if (!item.width || !item.height) {
-      return;
+      return false;
     }
 
     const vertical = tabs.verticalMode && !tabs.isContainerVerticalPinnedGrid?.(dragged);
@@ -48,7 +71,7 @@
     const axisStart = vertical ? viewport.top : viewport.left;
     const axisEnd = vertical ? viewport.bottom : viewport.right;
     if (end <= start) {
-      return;
+      return false;
     }
 
     const edge = Math.max(axisStart, Math.min(targetEdge, axisEnd));
@@ -56,29 +79,33 @@
     indicator.style.left = `${vertical ? start : edge}px`;
     indicator.style.top = `${vertical ? edge : start}px`;
     indicator.style.setProperty("--textfox-drop-span", `${end - start}px`);
-    indicator.hidden = false;
+    return true;
+  }
+
+  function followPosition(dragged) {
+    if (!tabs.hasAttribute("movingtab")) {
+      hide();
+      return;
+    }
+    indicator.hidden = !showPosition(dragged);
+    update = window.requestAnimationFrame(() => followPosition(dragged));
   }
 
   tabs.addEventListener("dragover", event => {
     // Use the index computed by the browser after its own dragover handler,
     // and keep the native indicator for copies, links and cross-window drops.
-    window.cancelAnimationFrame(update);
+    hide();
     const transfer = event.dataTransfer;
     const dragged = transfer?.mozItemCount ? transfer.mozGetDataAt(tabType, 0) : null;
     if (!event.defaultPrevented || dragged?.ownerDocument !== document ||
         !tabs.tabDragAndDrop?._tabDropIndicator?.hidden || dragged._dragData?.fromTabList) {
-      hide();
       return;
     }
     // Waterfox already highlights the parent for a drop that creates a child.
     if (window.TreeTabsDnD?.getAttachTarget?.(tabs, event, dragged)) {
-      hide();
       return;
     }
-    update = window.requestAnimationFrame(() => {
-      indicator.hidden = true;
-      showPosition(dragged);
-    });
+    update = window.requestAnimationFrame(() => followPosition(dragged));
   }, { signal });
 
   tabs.addEventListener("dragleave", event => {
@@ -93,5 +120,8 @@
     hide();
     controller.abort();
     indicator.remove();
+    if (dragAndDrop?._updateTabStylesOnDrag === centerDraggedTab) {
+      dragAndDrop._updateTabStylesOnDrag = updateTabStyles;
+    }
   });
 })();
