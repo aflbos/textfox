@@ -236,17 +236,30 @@ const { WaterfoxBrowserStyle } = ChromeUtils.importESModule("resource:///modules
 WaterfoxBrowserStyle.setStyle(arguments[0]);
 """, style)
         for density in (0.75, 1, 1.25):
-            top, side = execute("""
+            top, side, title_top, title_bottom, sidebar_top, tabs_top = execute("""
 document.documentElement.style.setProperty("--tf-density", arguments[0]);
 const rect = id => document.getElementById(id).getBoundingClientRect();
 const navbar = rect("nav-bar");
 const main = rect("tabbrowser-tabbox");
 const tabs = rect("vertical-tabs");
-return [main.top - navbar.bottom, Math.max(main.left - tabs.right, tabs.left - main.right)];
+const title = getComputedStyle(document.getElementById("vertical-tabs"), "::before");
+const titleTop = rect("browser").top + parseFloat(title.top) + parseFloat(title.marginTop);
+const sidebarTop = rect("sidebar-container").top;
+return [
+  main.top - navbar.bottom,
+  Math.max(main.left - tabs.right, tabs.left - main.right),
+  titleTop,
+  titleTop + parseFloat(title.height),
+  sidebarTop,
+  tabs.top,
+];
 """, density)
             assert side > 0 and abs(top - side) < 0.1, (style, density, top, side)
+            assert sidebar_top - 0.1 <= title_top <= tabs_top < title_bottom, (
+                style, density, sidebar_top, title_top, tabs_top, title_bottom,
+            )
     execute("document.documentElement.style.removeProperty('--tf-density');")
-    print("PASS equal gaps above and beside the main frame in all styles and densities")
+    print("PASS equal frame gaps and unclipped vertical tab titles in all styles and densities")
 
 
 def check_status_and_motion(execute):
