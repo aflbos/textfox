@@ -325,3 +325,5 @@ try {
 }
 if ($failed) { throw "$failed de $($cases.Count) cenários falharam." }
 Write-Host "$($cases.Count) cenários passaram."
+# The interrupted-install fixture deliberately leaves a nonzero $LASTEXITCODE.
+exit 0
