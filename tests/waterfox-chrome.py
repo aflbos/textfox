@@ -312,10 +312,6 @@ return (async () => {
     canvas.width = canvas.height = size;
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, size, size);
-    if (index === 0) {
-      ctx.fillStyle = "rgb(13, 241, 29)";
-      for (let x = 0; x < size; x += 2) ctx.fillRect(x, 0, 1, size);
-    }
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">'
       + '<rect width="16" height="16" fill="' + color + '"/></svg>';
     icon.src = index === 2 ? "data:image/svg+xml," + encodeURIComponent(svg) : canvas.toDataURL();
@@ -328,16 +324,13 @@ return (async () => {
     const pixels = ctx.getImageData(0, 0, canvas.width, 1).data;
     let painted = 0;
     for (let i = 0; i < pixels.length; i += 4) {
-      const magenta = pixels[i] === 247 && pixels[i + 1] === 3 && pixels[i + 2] === 223;
-      const green = pixels[i] === 13 && pixels[i + 1] === 241 && pixels[i + 2] === 29;
-      if (magenta || green) painted++;
+      if (pixels[i] === 247 && pixels[i + 1] === 3 && pixels[i + 2] === 223) painted++;
     }
     widths.push(painted);
   }
   return widths;
 })();
 """)
-        # The alternating PNG stripes must retain their original colors when enlarged.
         assert all(abs(width - 32) <= 1 for width in painted_widths), painted_widths
         for density in (0, 1, 2):
             execute('Services.prefs.setIntPref("browser.uidensity", arguments[0]);', density)
@@ -370,6 +363,83 @@ if (controller.sidebarMain.expanded) controller.handleToolbarButtonClick();
         "collapsed sidebar after pinned grid checks",
     )
     print("PASS expanded pinned grid has square tiles, centered icons and responsive columns")
+
+
+def check_pinned_favicon_cache(execute):
+    execute((ROOT / "chrome/pinned-favicons.uc.js").read_text(encoding="utf-8"))
+    execute("""
+const controller = window.SidebarController;
+if (!controller.sidebarMain.expanded) controller.handleToolbarButtonClick();
+const tab = gBrowser.addTrustedTab("https://textfox.example/favicons", { skipAnimation: true });
+tab.setAttribute("textfox-test-cache", "");
+gBrowser.pinTab(tab);
+""")
+    tab = 'const tab = gBrowser.tabContainer.querySelector("[textfox-test-cache]");\n'
+    try:
+        wait_for(
+            lambda: execute(tab + """
+return tab.linkedBrowser.currentURI.spec === "https://textfox.example/favicons"
+  && !tab.linkedBrowser.webProgress.isLoadingDocument;
+"""),
+            bool, "offline tab ready for favicon fixtures",
+        )
+        execute(tab + """
+const canvas = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
+canvas.width = canvas.height = 16;
+canvas.getContext("2d").fillRect(0, 0, 16, 16);
+gBrowser.setIcon(tab, canvas.toDataURL());
+""")
+        assert not execute(tab + 'return tab.hasAttribute("textfox-hd-favicon");')
+        cached = execute(tab + """
+return (async () => {
+  const { PlacesUtils } = ChromeUtils.importESModule("resource://gre/modules/PlacesUtils.sys.mjs");
+  const uri = tab.linkedBrowser.currentURI;
+  await PlacesUtils.history.insert({ url: uri.spec, visits: [{ date: new Date() }] });
+  const canvas = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#fa05c8";
+  ctx.fillRect(0, 0, 64, 64);
+  await PlacesUtils.favicons.setFaviconForPage(
+    uri, Services.io.newURI("https://textfox.example/icon.png"),
+    Services.io.newURI(canvas.toDataURL()), 0, true
+  );
+  const icon = await PlacesUtils.favicons.getFaviconForPage(uri, 32);
+  return [icon.width, icon.dataURI.spec];
+})();
+""")
+        assert cached[0] >= 32, cached[0]
+        wait_for(
+            lambda: execute(tab + """
+const icon = tab.querySelector(".tab-icon-image");
+const content = getComputedStyle(icon).content;
+const url = content.startsWith('url("moz-remote-image:') ? new URL(content.slice(5, -2)) : null;
+return [tab.hasAttribute("textfox-hd-favicon"), url?.searchParams.get("url") === arguments[0],
+        icon.getAttribute("src") !== arguments[0]];
+""", cached[1]),
+            lambda state: state == [True, True, True], "higher resolution favicon displayed",
+        )
+        wait_for(lambda: execute(tab + """
+const box = tab.querySelector(".tab-icon-image").getBoundingClientRect();
+const canvas = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
+canvas.width = canvas.height = 1;
+const ctx = canvas.getContext("2d");
+ctx.drawWindow(window, Math.floor(box.x + box.width / 2), Math.floor(box.y + box.height / 2),
+               1, 1, "transparent", 1);
+return Array.from(ctx.getImageData(0, 0, 1, 1).data);
+"""), lambda pixel: pixel == [250, 5, 200, 255], "cached favicon painted over the native icon")
+        assert execute(tab + """
+gBrowser.unpinTab(tab);
+return !tab.hasAttribute("textfox-hd-favicon")
+  && !tab.style.getPropertyValue("--textfox-pinned-favicon");
+""")
+    finally:
+        execute(tab + """
+gBrowser.removeTab(tab, { animate: false });
+const controller = window.SidebarController;
+if (controller.sidebarMain.expanded) controller.handleToolbarButtonClick();
+""")
+    print("PASS pinned tabs use higher-resolution cached favicons and restore the native icon on unpin")
 
 
 def check_collapsed_tab_frames(execute):
@@ -1005,6 +1075,7 @@ def main():
         check_tab_drop_position(execute, "vertical")
         check_compact_frame_titles(execute, vertical=True)
         check_expanded_pinned_grid(execute)
+        check_pinned_favicon_cache(execute)
 
 
 if __name__ == "__main__":

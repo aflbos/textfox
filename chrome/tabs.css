@@ -104,16 +104,15 @@ box#vertical-tabs {
       }
 
       .tab-icon-image {
-        /* A common 16px favicon gets a 2× scale without smoothing its edges. */
         width: 32px !important;
         height: 32px !important;
         object-fit: contain;
-        image-rendering: pixelated;
-
-        &:is(:not([src]), [src$=".svg" i], [src^="data:image/svg+xml" i]) {
-          image-rendering: auto;
-        }
+        image-rendering: auto;
       }
+    }
+
+    > .tabbrowser-tab[pinned][textfox-hd-favicon] .tab-icon-image {
+      content: var(--textfox-pinned-favicon) !important;
     }
   }
 }

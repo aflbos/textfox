@@ -9,6 +9,9 @@
     "chrome": {
       "tab-drop-position.uc.js": {
         "include": ["chrome://browser/content/browser.xhtml"]
+      },
+      "pinned-favicons.uc.js": {
+        "include": ["chrome://browser/content/browser.xhtml"]
       }
     }
   },

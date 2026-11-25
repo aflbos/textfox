@@ -53,6 +53,10 @@ _a firefox theme for the tui enthusiast_
 >   Este indicador usa um script local e requer que o Sine permita JavaScript
 >   dos mods locais (`sine.allow-unsafe-js`). A instalação mantém essa
 >   preferência do navegador.
+>   A grade de abas fixadas também usa um script local para escolher favicons
+>   de maior resolução no cache do navegador. Quando a imagem maior está
+>   disponível, ela é usada na barra lateral expandida. Essa consulta é local
+>   e é desativada em janelas privativas.
 > - No painel do Sine, abra as preferências do mod **textfox (Waterfox)** para
 >   ajustar a densidade, o tamanho da fonte, a espessura e os cantos das
 >   molduras. Também é possível ocultar os títulos e os atalhos da barra lateral
