@@ -265,6 +265,47 @@ return [
     print("PASS equal frame gaps and unclipped vertical tab titles in all styles and densities")
 
 
+def check_collapsed_tab_frames(execute):
+    pinned = execute("""
+const tab = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
+gBrowser.pinTab(tab);
+return tab.linkedPanel;
+""")
+    heights = []
+    for density in (0.75, 1, 1.25):
+        frames = execute("""
+document.documentElement.style.setProperty("--tf-density", arguments[0]);
+const tabs = document.getElementById("tabbrowser-tabs");
+if (tabs.hasAttribute("expanded")) return null;
+const selected = gBrowser.selectedTab;
+const pinned = Array.from(gBrowser.tabs).find(tab => tab.linkedPanel === arguments[1]);
+return [selected, pinned].map(tab => {
+  const frame = tab.querySelector(".tab-background").getBoundingClientRect();
+  const icon = tab.querySelector(".tab-icon-image").getBoundingClientRect();
+  return {
+    square: Math.abs(frame.width - frame.height) < 0.1 && frame.width > 0,
+    icon: [icon.width, icon.height],
+    x: frame.left + frame.width / 2 - icon.left - icon.width / 2,
+    y: frame.top + frame.height / 2 - icon.top - icon.height / 2,
+    row: tab.getBoundingClientRect().height,
+  };
+});
+""", density, pinned)
+        assert frames and all(
+            frame["square"] and frame["icon"] == [16, 16]
+            and abs(frame["x"]) < 1 and abs(frame["y"]) < 1
+            for frame in frames
+        ), (density, frames)
+        heights.append(frames[0]["row"])
+    assert heights[0] < heights[1] < heights[2], heights
+    execute("""
+document.documentElement.style.removeProperty("--tf-density");
+const pinned = Array.from(gBrowser.tabs).find(tab => tab.linkedPanel === arguments[0]);
+gBrowser.removeTab(pinned, { animate: false });
+""", pinned)
+    print("PASS collapsed tab frames stay square and preserve density-dependent row spacing")
+
+
 def check_compact_frame_titles(execute, *, vertical=False):
     execute("""
 document.documentElement.style.setProperty("--tf-density", "0.75");
@@ -726,6 +767,7 @@ def main():
         check_sine_urlbar_and_status(execute)
         check_colors(execute)
         check_sidebar(execute)
+        check_collapsed_tab_frames(execute)
         check_sine_area_titles(execute, vertical=True)
         check_sine_tree_guides(execute)
         check_sine_area_colors(execute)

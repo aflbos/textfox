@@ -84,6 +84,23 @@ box#vertical-tabs {
   --tab-min-height: max(calc(32px * var(--tf-density)), calc(var(--tf-font-size) + 10px));
 }
 
+/* Let the row grow with density and limit the square frame to the space
+   available in both axes of the collapsed rail. */
+#tabbrowser-tabs[orient="vertical"]:not([expanded])
+  .tabbrowser-tab:not(tab-split-view-wrapper > *) {
+  &:not([pinned]) > .tab-stack {
+    min-block-size: calc(var(--tab-min-height) + 2 * var(--tab-block-margin));
+  }
+
+  > .tab-stack > .tab-background {
+    --textfox-collapsed-frame-size: min(var(--tab-min-height), var(--tab-collapsed-background-width));
+    inline-size: var(--textfox-collapsed-frame-size) !important;
+    block-size: var(--textfox-collapsed-frame-size);
+    min-block-size: 0 !important;
+    place-self: center;
+  }
+}
+
 .tabbrowser-tab > .tab-stack > .tab-background {
   border: 1px solid var(--tf-border) !important;
   border-radius: var(--tf-rounding) !important;
