@@ -1,7 +1,8 @@
-/* fix urlbar being too high in ff 128 */
-* {
-  --urlbar-toolbar-height: 32px !important;
-  --urlbar-container-height: 32px !important;
+/* Keep the address bar tall enough for custom font sizes at every density. */
+#nav-bar,
+#nav-bar * {
+  --urlbar-toolbar-height: max(calc(32px * var(--tf-density)), calc(1.4 * var(--tf-font-size) + 10px)) !important;
+  --urlbar-container-height: var(--urlbar-toolbar-height) !important;
 }
 
 /* hide stuff */
@@ -82,8 +83,8 @@
   }
 }
 #PersonalToolbar {
-  margin: 8px 8px 2px;
-  padding: 4px !important;
+  margin: calc(8px * var(--tf-density)) calc(8px * var(--tf-density)) calc(2px * var(--tf-density));
+  padding: calc(4px * var(--tf-density)) !important;
   border-top: var(--border-width) !important;
   border-style: solid !important;
   border-width: var(--border-width);
@@ -113,7 +114,7 @@
 }
 
 toolbarbutton.bookmark-item:not(.subviewbutton) {
-  padding: 8px !important;
+  padding: calc(8px * var(--tf-density)) !important;
 }
 
 :root[tabsintitlebar] #toolbar-menubar[autohide="true"] {

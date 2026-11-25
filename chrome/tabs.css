@@ -1,8 +1,8 @@
 box#vertical-tabs {
-  margin: 8px !important;
+  margin: calc(8px * var(--tf-density)) !important;
   border: var(--border-width) solid var(--tf-border);
   border-radius: var(--tf-rounding);
-  padding: 8px 0px !important;
+  padding: calc(8px * var(--tf-density)) 0 !important;
   transition: border-color var(--tf-border-transition);
   min-width: 51px;
   &:hover,
@@ -29,7 +29,7 @@ box#vertical-tabs {
 
 #TabsToolbar {
   display: var(--tf-display-horizontal-tabs);
-  margin: 8px 8px 2px;
+  margin: calc(8px * var(--tf-density)) calc(8px * var(--tf-density)) calc(2px * var(--tf-density));
   border-top: var(--border-width) !important;
   border-style: solid !important;
   border-width: var(--border-width);
@@ -57,11 +57,6 @@ box#vertical-tabs {
     box-shadow: none !important;
     background-color: var(--tab-selected-bgcolor) !important;
   }
-  .tabbrowser-tab:hover
-    > .tab-stack
-    > .tab-background:not([selected], [multiselected]) {
-    background-color: var(--tab-hover-background-color) !important;
-  }
 }
 
 :root:not([privatebrowsingmode], [firefoxviewhidden])
@@ -78,7 +73,41 @@ box#vertical-tabs {
 }
 
 .toolbar-items {
-  margin: 3px;
+  margin: calc(3px * var(--tf-density));
+}
+
+#tabbrowser-tabs[orient="horizontal"] {
+  --tab-min-height: max(calc(36px * var(--tf-density)), calc(var(--tf-font-size) + 10px));
+}
+
+#tabbrowser-tabs[orient="vertical"] {
+  --tab-min-height: max(calc(32px * var(--tf-density)), calc(var(--tf-font-size) + 10px));
+}
+
+.tabbrowser-tab > .tab-stack > .tab-background {
+  border: 1px solid var(--tf-border) !important;
+  border-radius: var(--tf-rounding) !important;
+}
+
+.tabbrowser-tab:hover:not([visuallyselected], [multiselected]) > .tab-stack > .tab-background {
+  background-color: color-mix(in srgb, currentColor 12%, transparent) !important;
+}
+
+/* The active tab keeps a thicker edge even while another tab is hovered. */
+.tabbrowser-tab[visuallyselected] > .tab-stack > .tab-background {
+  border-color: var(--tf-accent) !important;
+  border-block-end-width: 3px !important;
+}
+
+#tabbrowser-tabs[orient="vertical"] .tabbrowser-tab[visuallyselected] > .tab-stack > .tab-background {
+  border-block-end-width: 1px !important;
+  border-inline-start-width: 3px !important;
+}
+
+.tabbrowser-tab:focus-visible > .tab-stack > .tab-background,
+#tabbrowser-tabs[tablist-has-focus] .tablist-keyboard-focus > .tab-stack > .tab-background {
+  outline: 2px dashed var(--focus-outline-color, currentColor) !important;
+  outline-offset: -5px !important;
 }
 
 tabs {

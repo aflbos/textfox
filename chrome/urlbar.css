@@ -1,4 +1,7 @@
 #urlbar {
+  /* The browser also sets the field height inline during layout. */
+  --urlbar-height: max(calc(26px * var(--tf-density)), calc(1.4 * var(--tf-font-size) + 4px)) !important;
+  min-height: var(--urlbar-height) !important;
   text-align: center;
 }
 

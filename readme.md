@@ -353,6 +353,7 @@ The theme ships with a `defaults.css`. Its values can be overridden in
 :root {
   --tf-font-family: "SF Mono", Consolas, monospace; /* Font family of config */
   --tf-font-size: 14px; /* Font size of config */
+  --tf-density: 1; /* Spacing multiplier */
   --tf-accent: var(--toolbarbutton-icon-fill); /* Accent color used, eg: color when hovering a container  */
   --tf-bg: var(--lwt-accent-color, -moz-dialog); /* Background color of all elements, tab colors derive from this */
   --tf-border: var(--panel-border-color, var(--toolbar-field-background-color)); /* Border color when not hovered */
@@ -367,8 +368,8 @@ The theme ships with a `defaults.css`. Its values can be overridden in
   --tf-display-sidebar-tools: flex; /* If the "Customize sidebar" button on the sidebar should be shown, none = hidden, flex = shown */ 
   --tf-display-titles: flex; /* If titles (tabs, navbar, main etc.) should be shown, none = hidden, flex = shown */
   --tf-newtab-logo: "   __            __  ____          \A   / /____  _  __/ /_/ __/___  _  __\A  / __/ _ \\| |/_/ __/ /_/ __ \\| |/_/\A / /_/  __/>  </ /_/ __/ /_/ />  <  \A \\__/\\___/_/|_|\\__/_/  \\____/_/|_|  ";
-  --tf-navbar-margin: 8px 8px 2px; /* navbar margin */
-  --tf-navbar-padding: 4px; /* navbar padding */
+  --tf-navbar-margin: calc(8px * var(--tf-density)) calc(8px * var(--tf-density)) calc(2px * var(--tf-density));
+  --tf-navbar-padding: calc(4px * var(--tf-density));
   --tf-bookmarks-alignment: center; /* alignment of bookmarks in the bookmarks toolbar (if you have many bookmarks, left is recommended) */
 }
 
@@ -386,6 +387,22 @@ Wanna hide the logo? Simply pass an empty string as the logo.
 ### Recipes
 
 Here are some example changes that you can do to achieve different looks.
+
+#### Compact or comfortable spacing
+
+Set `--tf-density` in `config.css` to `0.75` for compact spacing or `1.25`
+for comfortable spacing. The standard value is `1`. This adjusts spacing
+around the address bar, tabs, sidebar tools and status bar independently of
+`--tf-font-size`.
+
+```css
+:root {
+  --tf-density: 0.75;
+}
+```
+
+With Home Manager or NixOS, set `textfox.config.density` to `"compact"`,
+`"standard"` or `"comfortable"`.
 
 #### Swap positions of tabs and window controls when using horizontal tabs
 ```css

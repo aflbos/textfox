@@ -163,6 +163,71 @@ def check_sidebar(execute):
     print("PASS sidebar layout and tree-tab control")
 
 
+def check_tab_states(execute, orientation):
+    result = execute("""
+const selected = gBrowser.selectedTab;
+const other = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
+const style = (tab) => {
+  const css = getComputedStyle(tab.querySelector(".tab-background"));
+  return [css.borderBlockEndWidth, css.borderInlineStartWidth, css.outlineStyle];
+};
+const before = [style(selected), style(other)];
+const otherBackground = other.querySelector(".tab-background");
+otherBackground.style.setProperty("transition", "none", "important");
+const background = () => getComputedStyle(otherBackground).backgroundColor;
+const idleBackground = background();
+InspectorUtils.addPseudoClassLock(other, ":hover");
+const hovered = { selected: style(selected), other: style(other), background: background() };
+InspectorUtils.removePseudoClassLock(other, ":hover");
+gBrowser.selectedTab = other;
+Services.focus.setFocus(other, Ci.nsIFocusManager.FLAG_BYKEY);
+const after = [style(selected), style(other)];
+const focus = [other.matches(":focus-visible"), document.activeElement === other];
+gBrowser.selectedTab = selected;
+gBrowser.removeTab(other, { animate: false });
+return { before, after, focus, hovered, idleBackground };
+""")
+    marker = ["3px", "1px"] if orientation == "horizontal" else ["1px", "3px"]
+    assert result["before"][0][:2] == marker, result
+    assert result["before"][1][:2] == ["1px", "1px"], result
+    assert result["hovered"]["selected"][:2] == marker, result
+    assert result["hovered"]["other"][:2] == ["1px", "1px"], result
+    assert result["hovered"]["background"] != result["idleBackground"], result
+    assert result["focus"] == [True, True] and result["after"][1][2] == "dashed", result
+    assert result["after"][0][:2] == ["1px", "1px"] and result["after"][1][:2] == marker, result
+    print(f"PASS {orientation} selection marker differs from hover and keyboard focus")
+
+
+def check_density(execute, *, vertical=False):
+    read_sizes = """
+const css = (selector) => getComputedStyle(document.querySelector(selector));
+const height = (element) => element.getBoundingClientRect().height;
+return {
+  address: height(document.querySelector("#urlbar")),
+  navbarPadding: parseFloat(css("#nav-bar").paddingTop),
+  tab: height(gBrowser.selectedTab),
+  font: css("#urlbar-input").fontSize,
+  ...(arguments[0] && {
+    sidebarMargin: parseFloat(css("#vertical-tabs").marginTop),
+    statusPadding: parseFloat(css("#status-bar").paddingTop),
+  }),
+};
+"""
+    sizes = []
+    for density in (0.75, 1, 1.25):
+        execute("document.documentElement.style.setProperty('--tf-density', arguments[0]);", density)
+        sizes.append(wait_for(
+            lambda: execute(read_sizes, vertical),
+            lambda size: not sizes or size["address"] > sizes[-1]["address"],
+            f"address field did not resize at density {density}",
+        ))
+    execute("document.documentElement.style.removeProperty('--tf-density');")
+    assert len({size["font"] for size in sizes}) == 1, sizes
+    for key in sizes[0].keys() - {"font"}:
+        assert sizes[0][key] < sizes[1][key] < sizes[2][key], (key, sizes)
+    print(f"PASS compact, standard and comfortable spacing ({'vertical' if vertical else 'horizontal'})")
+
+
 def check_status_and_motion(execute):
     start = wait_for(lambda: execute(STATUS), lambda _: True, "status bar or tabs not ready")
     assert start["barBorder"] == "2px" and start["barMargin"] == "6px", start
@@ -189,6 +254,8 @@ def main():
     with gecko_profile(browser, theme_dir=ROOT) as (_, _, execute):
         assert not execute("return Services.prefs.getBoolPref('sidebar.verticalTabs', false);")
         assert execute(tab_height) > 0, "Selected horizontal tab is invisible in a fresh profile"
+        check_tab_states(execute, "horizontal")
+        check_density(execute)
         execute("document.documentElement.style.setProperty('--tf-display-horizontal-tabs', 'none');")
         assert execute(tab_height) == 0, "Explicit horizontal tab override was ignored"
         print("PASS fresh profile shows horizontal tabs and respects explicit hiding")
@@ -199,6 +266,8 @@ def main():
         print(f"Waterfox {info[1]}")
         assert execute(tab_height) > 0, "Selected vertical tab is invisible"
         assert execute("return document.getElementById('TabsToolbar').getBoundingClientRect().height;") == 0
+        check_tab_states(execute, "vertical")
+        check_density(execute, vertical=True)
         check_colors(execute)
         check_sidebar(execute)
         check_status_and_motion(execute)

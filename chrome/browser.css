@@ -8,10 +8,10 @@ browser {
 
 #tabbrowser-tabbox,
 .split-view-panel {
-  margin: 8px !important;
+  margin: calc(8px * var(--tf-density)) !important;
   border: var(--border-width) solid var(--tf-border);
   border-radius: var(--tf-rounding);
-  padding: 8px !important;
+  padding: calc(8px * var(--tf-density)) !important;
   transition: border-color var(--tf-border-transition);
   &:hover {
     border-color: var(--tf-accent) !important;
@@ -87,7 +87,7 @@ browser {
     border-width: var(--border-width) 0 0 var(--border-width) !important;
     transition: border-color var(--tf-border-transition);
     position: absolute;
-    margin-right: -8px;
-    margin-bottom: -8px;
+    margin-right: calc(-8px * var(--tf-density));
+    margin-bottom: calc(-8px * var(--tf-density));
   }
 }

@@ -11,6 +11,11 @@ let
   inherit (lib.types) bool str;
 
   cfg = config.textfox.config;
+  densityScale = {
+    compact = "0.75";
+    standard = "1";
+    comfortable = "1.25";
+  };
 in
 {
   imports = [
@@ -133,15 +138,25 @@ in
         description = "Text transform to use";
       };
 
+      density = mkOption {
+        type = lib.types.enum [
+          "compact"
+          "standard"
+          "comfortable"
+        ];
+        default = "standard";
+        description = "Spacing preset for the browser interface.";
+      };
+
       navbar = {
         margin = mkOption {
           type = str;
-          default = "8px 8px 2px";
+          default = "calc(8px * var(--tf-density)) calc(8px * var(--tf-density)) calc(2px * var(--tf-density))";
           description = "Navbar margin";
         };
         padding = mkOption {
           type = str;
-          default = "4px";
+          default = "calc(4px * var(--tf-density))";
           description = "Navbar padding";
         };
       };
@@ -155,12 +170,12 @@ in
       statusbar = {
         margin = mkOption {
           type = str;
-          default = "6px 8px 8px";
+          default = "calc(6px * var(--tf-density)) calc(8px * var(--tf-density)) calc(8px * var(--tf-density))";
           description = "Margin of the Waterfox status bar";
         };
         padding = mkOption {
           type = str;
-          default = "4px";
+          default = "calc(4px * var(--tf-density))";
           description = "Padding of the Waterfox status bar";
         };
       };
@@ -180,6 +195,7 @@ in
         :root {
           --tf-font-family: ${cfg.font.family};
           --tf-font-size: ${cfg.font.size};
+          --tf-density: ${densityScale.${cfg.density}};
           --tf-accent: ${cfg.font.accent};
           --tf-bg: ${cfg.background.color};
           --tf-border: ${cfg.border.color};
