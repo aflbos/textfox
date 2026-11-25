@@ -84,5 +84,45 @@
     "label": "Usar a barra de status sem moldura nem título",
     "property": "textfox.sine.discreetStatusBar",
     "defaultValue": false
+  },
+  {
+    "type": "dropdown",
+    "label": "Guias das abas em árvore (barra lateral expandida)",
+    "property": "textfox.sine.treeGuides",
+    "defaultValue": "browser",
+    "placeholder": false,
+    "options": [
+      { "label": "Padrão do Waterfox", "value": "browser" },
+      { "label": "Usar a cor de destaque do Textfox", "value": "accent" },
+      { "label": "Ocultar guias", "value": "hidden" }
+    ]
+  },
+  {
+    "type": "text",
+    "label": "**Títulos por área**"
+  },
+  {
+    "type": "checkbox",
+    "label": "Ocultar o título da barra de abas",
+    "property": "textfox.sine.hideTabsTitle",
+    "defaultValue": false
+  },
+  {
+    "type": "checkbox",
+    "label": "Ocultar os títulos das ferramentas laterais",
+    "property": "textfox.sine.hideSidebarTitles",
+    "defaultValue": false
+  },
+  {
+    "type": "checkbox",
+    "label": "Ocultar os títulos da área da página e das divisões",
+    "property": "textfox.sine.hideMainTitle",
+    "defaultValue": false
+  },
+  {
+    "type": "checkbox",
+    "label": "Ocultar o título da barra de status",
+    "property": "textfox.sine.hideStatusTitle",
+    "defaultValue": false
   }
 ]

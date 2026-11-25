@@ -82,7 +82,8 @@ $cases = [ordered]@{
     Assert-True ($data.$modId.preferences -ceq "preferences.json") "O painel de preferências não foi registrado."
     $prefsPath = Join-Path $profile.Mod $data.$modId.preferences
     $prefs = Get-Content -LiteralPath $prefsPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    Assert-True ($prefs.Count -eq 10) "O pacote não oferece os dez controles esperados."
+    $controls = @($prefs | Where-Object property)
+    Assert-True ($controls.Count -eq 15) "O pacote não oferece os quinze controles esperados."
     $entrypoint = Join-Path $profile.Mod $data.$modId.style.chrome
     Assert-True (Test-Path -LiteralPath $entrypoint -PathType Leaf) "O CSS registrado não existe."
     $firstBackup = @(Get-Backups $profile)

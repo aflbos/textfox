@@ -429,6 +429,67 @@ Services.prefs.clearUserPref("textfox.sine.discreetStatusBar");
     print("PASS separate address bar indicators and actions, and borderless status bar")
 
 
+def check_sine_area_titles(execute, *, vertical=False):
+    def read():
+        return execute("""
+const tabs = document.getElementById(arguments[0] ? "vertical-tabs" : "TabsToolbar");
+const tools = window.SidebarController.sidebarMain?.shadowRoot?.querySelector(".buttons-wrapper");
+const main = document.getElementById("tabbrowser-tabbox");
+const status = document.getElementById("status-bar");
+return [tabs, tools, main, status].map(element => element && getComputedStyle(element, "::before").display);
+""", vertical)
+
+    before = wait_for(read, lambda titles: titles[0:3] == ["flex"] * 3, "area titles before changes")
+    for index, pref in enumerate(("hideTabsTitle", "hideSidebarTitles", "hideMainTitle", "hideStatusTitle")):
+        if before[index] is None:
+            continue
+        expected = before.copy()
+        expected[index] = "none"
+        name = f"textfox.sine.{pref}"
+        execute("Services.prefs.setBoolPref(arguments[0], true);", name)
+        wait_for(read, lambda titles: titles == expected, pref)
+        execute("Services.prefs.clearUserPref(arguments[0]);", name)
+        wait_for(read, lambda titles: titles == before, f"restore {pref}")
+    print(f"PASS independent Sine titles ({'vertical' if vertical else 'horizontal'})")
+
+
+def check_sine_tree_guides(execute):
+    toggle = "window.SidebarController.handleToolbarButtonClick();"
+    expanded = 'return document.getElementById("tabbrowser-tabs").hasAttribute("expanded");'
+    if not execute(expanded):
+        execute(toggle)
+    wait_for(lambda: execute(expanded), bool, "expanded vertical tabs")
+    assert execute("""
+const { TreeTabsService } = ChromeUtils.importESModule("resource:///modules/TreeTabsService.sys.mjs");
+const parent = gBrowser.selectedTab;
+const child = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
+child.id = "textfox-guide-test-child";
+return TreeTabsService.attachTab(child, parent);
+""")
+    read = """
+const child = document.getElementById("textfox-guide-test-child");
+if (child.dataset.treeLevel !== "1") return null;
+const css = getComputedStyle(child);
+return [css.borderInlineStartColor, css.borderInlineStartWidth, css.marginInlineStart];
+"""
+    native = wait_for(lambda: execute(read), lambda style: style[2] != "0px", "Waterfox tree indentation")
+    execute('Services.prefs.setStringPref("textfox.sine.treeGuides", "accent");')
+    accent = wait_for(lambda: execute(read), lambda style: style[1] == "1px" and style[0] != native[0], "Textfox tree guide")
+    assert accent[2] == native[2], (accent, native)
+    execute('Services.prefs.setStringPref("textfox.sine.treeGuides", "hidden");')
+    hidden = wait_for(lambda: execute(read), lambda style: style[0] == "rgba(0, 0, 0, 0)", "hidden tree guide")
+    assert hidden[2] == native[2], (hidden, native)
+    execute(toggle)
+    wait_for(lambda: execute(expanded), lambda value: not value, "collapsed vertical tabs")
+    collapsed = execute(read)
+    assert collapsed[0] != hidden[0], collapsed
+    execute("""
+Services.prefs.clearUserPref("textfox.sine.treeGuides");
+gBrowser.removeTab(document.getElementById("textfox-guide-test-child"), { animate: false });
+""")
+    print("PASS native, accented and hidden hierarchy guides on a real child tab")
+
+
 def main():
     browser = browser_argument(__doc__)
     tab_height = "return gBrowser.selectedTab.getBoundingClientRect().height;"
@@ -444,6 +505,7 @@ def main():
         check_waterfox_appearance(execute, "horizontal")
         check_native_density(execute)
         check_sine_preferences(execute)
+        check_sine_area_titles(execute)
     with gecko_profile(browser, preferences=PREFERENCES, theme_dir=ROOT) as (_, _, execute):
         info = execute("return [Services.appinfo.name, Services.appinfo.version];")
         if info[0].lower() != "waterfox":
@@ -456,6 +518,8 @@ def main():
         check_sine_urlbar_and_status(execute)
         check_colors(execute)
         check_sidebar(execute)
+        check_sine_area_titles(execute, vertical=True)
+        check_sine_tree_guides(execute)
         check_status_and_motion(execute)
         execute("window.fullScreen = false;")
         check_waterfox_appearance(execute, "vertical")

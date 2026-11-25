@@ -92,6 +92,22 @@
 
 /* ── Abas em árvore (browser.tabs.verticalTabs.tree.enabled) ───────────── */
 
+/* Use the native indent as the anchor. Some Waterfox styles suppress the
+   default border, so the accent option sets its width and style as well. */
+@media -moz-pref("textfox.sine.treeGuides", "accent") and (not (forced-colors)) {
+  #vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[expanded]
+    .tabbrowser-tab[data-tree-level]:not([data-tree-level="0"]) {
+    border-inline-start: 1px solid color-mix(in srgb, var(--tf-accent) 45%, transparent) !important;
+  }
+}
+
+@media -moz-pref("textfox.sine.treeGuides", "hidden") and (not (forced-colors)) {
+  #vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[expanded]
+    .tabbrowser-tab[data-tree-level]:not([data-tree-level="0"]) {
+    border-inline-start-color: transparent !important;
+  }
+}
+
 /* Seta de expandir/recolher: cor de destaque do textfox ao passar o mouse. */
 #vertical-tabs[tree-tabs-enabled] .tab-tree-disclosure:hover::before {
   fill: var(--tf-accent);

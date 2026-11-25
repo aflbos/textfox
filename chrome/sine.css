@@ -90,3 +90,27 @@
     --tf-display-urlbar-indicators: none;
   }
 }
+
+@media -moz-pref("textfox.sine.hideTabsTitle") {
+  :is(box#vertical-tabs, #TabsToolbar)::before {
+    display: none;
+  }
+}
+
+@media -moz-pref("textfox.sine.hideSidebarTitles") {
+  :is(#sidebar-box, .buttons-wrapper)::before {
+    display: none;
+  }
+}
+
+@media -moz-pref("textfox.sine.hideMainTitle") {
+  :is(#tabbrowser-tabbox, .split-view-panel)::before {
+    display: none;
+  }
+}
+
+@media -moz-pref("textfox.sine.hideStatusTitle") {
+  #status-bar::before {
+    display: none;
+  }
+}
