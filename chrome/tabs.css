@@ -131,6 +131,25 @@ box#vertical-tabs {
   outline-offset: -5px !important;
 }
 
+#textfox-tab-drop-position:not([hidden]) {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  background-color: var(--focus-outline-color, var(--tf-accent));
+}
+
+#textfox-tab-drop-position[data-axis="vertical"] {
+  width: var(--textfox-drop-span);
+  height: 3px;
+  translate: 0 -50%;
+}
+
+#textfox-tab-drop-position[data-axis="horizontal"] {
+  width: 3px;
+  height: var(--textfox-drop-span);
+  translate: -50% 0;
+}
+
 /* Restored tabs may have an SVG of the entire page instead of a screenshot.
    Keep the top of that SVG at full width and clip the rest to a 16:9 preview. */
 #tab-preview-panel .tab-preview-thumbnail-container:has(> svg) {

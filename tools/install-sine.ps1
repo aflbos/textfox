@@ -193,6 +193,7 @@ try {
       description  = $theme.description
       updatedAt    = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
       preferences  = $theme.preferences
+      scripts      = $theme.scripts
       "no-updates" = $true
       enabled      = $true
     }
@@ -225,9 +226,9 @@ try {
     if (-not $existing) {
       [IO.File]::WriteAllText((Join-Path $staged $receipt), "$ModId/$runId", $utf8)
     }
-    foreach ($sheet in $theme.style.chrome, $theme.style.content) {
-      if (-not (Test-Path -LiteralPath (Join-Path $staged $sheet) -PathType Leaf)) {
-        throw "O pacote preparado está incompleto. Arquivo ausente: $sheet"
+    foreach ($file in $theme.style.chrome, $theme.style.content, "chrome/tab-drop-position.uc.js") {
+      if (-not (Test-Path -LiteralPath (Join-Path $staged $file) -PathType Leaf)) {
+        throw "O pacote preparado está incompleto. Arquivo ausente: $file"
       }
     }
   }

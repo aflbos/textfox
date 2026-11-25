@@ -102,6 +102,12 @@
   }
 }
 
+/* An outline distinguishes a child drop from insertion between rows. */
+#vertical-tabs[tree-tabs-enabled] .tabbrowser-tab[data-tree-drop-target="child"] {
+  outline: 2px dashed var(--focus-outline-color, var(--tf-accent)) !important;
+  outline-offset: -2px;
+}
+
 /* Seta de expandir/recolher: cor de destaque do textfox ao passar o mouse. */
 #vertical-tabs[tree-tabs-enabled] .tab-tree-disclosure:hover::before {
   fill: var(--tf-accent);

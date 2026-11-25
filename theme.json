@@ -5,6 +5,13 @@
   "version": "1.0.0-waterfox.1",
   "homepage": "",
   "preferences": "preferences.json",
+  "scripts": {
+    "chrome": {
+      "tab-drop-position.uc.js": {
+        "include": ["chrome://browser/content/browser.xhtml"]
+      }
+    }
+  },
   "style": {
     "chrome": "chrome/userChrome.css",
     "content": "chrome/userContent.css"

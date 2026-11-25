@@ -80,6 +80,9 @@ $cases = [ordered]@{
     Assert-True (-not $data.original.enabled) "O tema original continuou habilitado."
     Assert-True ($data.outro.enabled -and $data.outro.extra.value -eq 7) "Outro mod foi alterado."
     Assert-True ($data.$modId.preferences -ceq "preferences.json") "O painel de preferências não foi registrado."
+    $script = $data.$modId.scripts.chrome.'tab-drop-position.uc.js'
+    Assert-True ($script.include -ceq "chrome://browser/content/browser.xhtml") "O indicador de arraste não foi registrado para a janela do navegador."
+    Assert-True ([IO.File]::Exists((Join-Path $profile.Mod "chrome/tab-drop-position.uc.js"))) "O indicador de arraste não foi instalado."
     $prefsPath = Join-Path $profile.Mod $data.$modId.preferences
     $prefs = Get-Content -LiteralPath $prefsPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $controls = @($prefs | Where-Object property)

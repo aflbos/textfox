@@ -49,6 +49,10 @@ _a firefox theme for the tui enthusiast_
 >   O script valida o registro do Sine antes de trocar os arquivos. Ele instala
 >   o mod em `chrome\sine-mods\textfox-waterfox`, desliga as atualizações
 >   automáticas para essa cópia e desabilita o textfox original, se estiver ativo.
+>   Ao reordenar abas na mesma janela, o Textfox mostra uma linha no destino.
+>   Este indicador usa um script local e requer que o Sine permita JavaScript
+>   dos mods locais (`sine.allow-unsafe-js`). A instalação mantém essa
+>   preferência do navegador.
 > - No painel do Sine, abra as preferências do mod **textfox (Waterfox)** para
 >   ajustar a densidade, o tamanho da fonte, a espessura e os cantos das
 >   molduras. Também é possível ocultar os títulos e os atalhos da barra lateral

@@ -738,6 +738,98 @@ return { tall, short, snapshot };
     print("PASS tall tab wireframes are cropped and normal previews retain their size")
 
 
+def check_tab_drop_position(execute, orientation):
+    execute((ROOT / "chrome/tab-drop-position.uc.js").read_text(encoding="utf-8"))
+    started = execute("""
+const first = gBrowser.selectedTab;
+const second = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
+const third = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
+const transfer = new DataTransfer();
+const eventAt = (type, tab, offset) => {
+  const r = tab.getBoundingClientRect();
+  const x = Math.round(r.left + r.width * offset);
+  const y = Math.round(r.top + r.height * offset);
+  return new DragEvent(type, {
+    bubbles: true, cancelable: true, dataTransfer: transfer, clientX: x, clientY: y,
+    screenX: window.mozInnerScreenX + x, screenY: window.mozInnerScreenY + y,
+  });
+};
+first.dispatchEvent(eventAt("dragstart", first, 0.5));
+transfer.dropEffect = "move";
+third.dispatchEvent(eventAt("dragover", third, 0.9));
+window.textfoxTestDrag = { first, second, third, eventAt };
+return gBrowser.tabContainer.hasAttribute("movingtab");
+""")
+    assert started, orientation
+    result = wait_for(
+        lambda: execute("""
+const indicator = document.getElementById("textfox-tab-drop-position");
+if (indicator.hidden) return null;
+const drag = window.textfoxTestDrag.first._dragData;
+const target = drag.dropElement.getBoundingClientRect();
+const line = indicator.getBoundingClientRect();
+const vertical = indicator.dataset.axis === "vertical";
+return {
+  axis: indicator.dataset.axis,
+  thickness: vertical ? line.height : line.width,
+  edge: vertical ? line.top + line.height / 2 : line.left + line.width / 2,
+  expected: vertical
+    ? (drag.dropBefore ? target.top : target.bottom)
+    : (drag.dropBefore ? target.left : target.right),
+};
+"""),
+        bool,
+        f"native {orientation} drag indicator",
+    )
+    assert result["axis"] == orientation and result["thickness"] == 3, result
+    assert abs(result["edge"] - result["expected"]) < 1, result
+    if orientation == "vertical":
+        execute("""
+const drag = window.textfoxTestDrag;
+const event = drag.eventAt("dragover", drag.third, 0.5);
+drag.third.dispatchEvent(event);
+drag.childTarget = gBrowser.tabContainer.querySelector('[data-tree-drop-target="child"]');
+drag.childDrop = new DragEvent("drop", {
+  bubbles: true, cancelable: true, dataTransfer: event.dataTransfer,
+  clientX: event.clientX, clientY: event.clientY, screenX: event.screenX, screenY: event.screenY,
+});
+""")
+        child = wait_for(
+            lambda: execute("""
+const target = window.textfoxTestDrag.childTarget;
+return target?.dataset.treeDropTarget === "child" &&
+  document.getElementById("textfox-tab-drop-position").hidden
+  && getComputedStyle(target).outlineStyle;
+"""),
+            bool,
+            "child drop outline",
+        )
+        assert child == "dashed", child
+    execute("""
+const { third, eventAt, childDrop } = window.textfoxTestDrag;
+third.dispatchEvent(childDrop ?? eventAt("drop", third, 0.9));
+""", orientation)
+    wait_for(
+        lambda: execute("""
+const { first, third, childTarget } = window.textfoxTestDrag;
+return arguments[0] === "vertical"
+  ? first.dataset.treeParent === childTarget.linkedPanel
+  : first._tPos > third._tPos;
+""", orientation),
+        bool,
+        f"native {orientation} drop placement",
+    )
+    execute("""
+const { second, third } = window.textfoxTestDrag;
+gBrowser.tabContainer.tabDragAndDrop.finishAnimateTabMove();
+gBrowser.removeTab(second, { animate: false });
+gBrowser.removeTab(third, { animate: false });
+delete window.textfoxTestDrag;
+""")
+    assert execute('return document.getElementById("textfox-tab-drop-position").hidden;')
+    print(f"PASS {orientation} drag shows the native drop edge and clears the marker on drop")
+
+
 def main():
     browser = browser_argument(__doc__)
     tab_height = "return gBrowser.selectedTab.getBoundingClientRect().height;"
@@ -755,6 +847,7 @@ def main():
         check_sine_preferences(execute)
         check_sine_area_titles(execute)
         check_compact_frame_titles(execute)
+        check_tab_drop_position(execute, "horizontal")
     with gecko_profile(browser, preferences=PREFERENCES, theme_dir=ROOT) as (_, _, execute):
         info = execute("return [Services.appinfo.name, Services.appinfo.version];")
         if info[0].lower() != "waterfox":
@@ -776,6 +869,7 @@ def main():
         execute("window.fullScreen = false;")
         check_waterfox_appearance(execute, "vertical")
         check_frame_spacing(execute)
+        check_tab_drop_position(execute, "vertical")
         check_compact_frame_titles(execute, vertical=True)
 
 
