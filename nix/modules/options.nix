@@ -173,7 +173,7 @@ in
       navbar = {
         margin = mkOption {
           type = str;
-          default = "calc(8px * var(--tf-density)) calc(8px * var(--tf-density)) calc(2px * var(--tf-density))";
+          default = "calc(8px * var(--tf-density)) calc(8px * var(--tf-density)) calc(8px * var(--tf-density) + var(--textfox-navbar-gap-adjustment, 0px))";
           description = "Navbar margin";
         };
         padding = mkOption {

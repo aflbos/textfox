@@ -229,6 +229,26 @@ return {
     print(f"PASS compact, standard and comfortable spacing ({'vertical' if vertical else 'horizontal'})")
 
 
+def check_frame_spacing(execute):
+    for style in ("nova", "proton", "photon"):
+        execute("""
+const { WaterfoxBrowserStyle } = ChromeUtils.importESModule("resource:///modules/WaterfoxBrowserStyle.sys.mjs");
+WaterfoxBrowserStyle.setStyle(arguments[0]);
+""", style)
+        for density in (0.75, 1, 1.25):
+            top, side = execute("""
+document.documentElement.style.setProperty("--tf-density", arguments[0]);
+const rect = id => document.getElementById(id).getBoundingClientRect();
+const navbar = rect("nav-bar");
+const main = rect("tabbrowser-tabbox");
+const tabs = rect("vertical-tabs");
+return [main.top - navbar.bottom, Math.max(main.left - tabs.right, tabs.left - main.right)];
+""", density)
+            assert side > 0 and abs(top - side) < 0.1, (style, density, top, side)
+    execute("document.documentElement.style.removeProperty('--tf-density');")
+    print("PASS equal gaps above and beside the main frame in all styles and densities")
+
+
 def check_status_and_motion(execute):
     start = wait_for(lambda: execute(STATUS), lambda _: True, "status bar or tabs not ready")
     assert start["barBorder"] == "2px" and start["barMargin"] == "6px", start
@@ -629,6 +649,7 @@ def main():
         check_status_and_motion(execute)
         execute("window.fullScreen = false;")
         check_waterfox_appearance(execute, "vertical")
+        check_frame_spacing(execute)
 
 
 if __name__ == "__main__":
