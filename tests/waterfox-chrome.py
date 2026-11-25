@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PREFERENCES = {
     "browser.statusbar.enabled": True,
     "browser.tabs.verticalTabs.tree.enabled": True,
+    "browser.uidensity": 0,
     "sidebar.revamp": True,
     "sidebar.verticalTabs": True,
     "sidebar.visibility": "always-show",
@@ -248,6 +249,76 @@ def check_status_and_motion(execute):
     print("PASS fullscreen removes the status bar frame and title")
 
 
+def check_waterfox_appearance(execute, orientation):
+    for style, palette in (("nova", "pine"), ("proton", "sun"), ("photon", "dusk")):
+        for mode in ("light", "dark"):
+            execute("""
+const { WaterfoxBrowserStyle } = ChromeUtils.importESModule("resource:///modules/WaterfoxBrowserStyle.sys.mjs");
+const { WaterfoxThemeColors } = ChromeUtils.importESModule("resource:///modules/WaterfoxThemeColors.sys.mjs");
+WaterfoxBrowserStyle.setStyle(arguments[0]);
+WaterfoxThemeColors.setColor(arguments[1]);
+WaterfoxThemeColors.setMode(arguments[2]);
+""", style, palette, mode)
+            appearance = wait_for(
+                lambda: execute("""
+const root = document.documentElement;
+const css = getComputedStyle(root);
+const content = getComputedStyle(document.querySelector(".browserContainer"));
+const tab = getComputedStyle(gBrowser.selectedTab.querySelector(".tab-background"));
+return {
+  nova: Services.prefs.getBoolPref("browser.nova.enabled"),
+  background: content.backgroundColor,
+  palette: css.getPropertyValue("--lwt-accent-color").trim(),
+  marker: arguments[0] === "vertical" ? tab.borderInlineStartWidth : tab.borderBlockEndWidth,
+};
+""", orientation),
+                lambda item: item["palette"] and item["background"] == item["palette"],
+                f"{style} with {palette} in {mode} mode",
+            )
+            assert appearance["nova"] == (style == "nova"), appearance
+            assert appearance["marker"] == "3px", appearance
+            if mode == "light":
+                light = appearance["background"]
+            else:
+                assert light != appearance["background"], appearance
+
+        execute("""
+document.documentElement.style.setProperty("--tf-rounding", "9px");
+document.getElementById("contentAreaContextMenu").openPopupAtScreen(120, 120, true);
+""")
+        popup = wait_for(
+            lambda: execute("""
+const popup = document.getElementById("contentAreaContextMenu");
+const frame = popup.shadowRoot.querySelector('[part~="content"]');
+return {
+  state: popup.state,
+  appearance: getComputedStyle(popup).appearance,
+  radius: getComputedStyle(frame).borderRadius,
+  itemRadius: getComputedStyle(popup.querySelector("menuitem")).borderRadius,
+};
+"""),
+            lambda item: item["state"] == "open",
+            f"{style} context menu did not open",
+        )
+        assert popup == {"state": "open", "appearance": "none", "radius": "0px", "itemRadius": "0px"}, popup
+        execute("document.getElementById('contentAreaContextMenu').hidePopup();")
+    print(f"PASS Nova, Proton and Photon palettes and square context menus ({orientation})")
+
+
+def check_native_density(execute):
+    for preference, attribute, scale in ((1, "compact", "0.75"), (2, "touch", "1.25"), (0, None, "1")):
+        execute("Services.prefs.setIntPref('browser.uidensity', arguments[0]);", preference)
+        wait_for(
+            lambda: execute("""
+const root = document.documentElement;
+return [root.getAttribute("uidensity"), getComputedStyle(root).getPropertyValue("--tf-density").trim()];
+"""),
+            lambda result: result == [attribute, scale],
+            f"browser density {preference}",
+        )
+    print("PASS native Compact, Touch and Normal density settings")
+
+
 def main():
     browser = browser_argument(__doc__)
     tab_height = "return gBrowser.selectedTab.getBoundingClientRect().height;"
@@ -259,6 +330,9 @@ def main():
         execute("document.documentElement.style.setProperty('--tf-display-horizontal-tabs', 'none');")
         assert execute(tab_height) == 0, "Explicit horizontal tab override was ignored"
         print("PASS fresh profile shows horizontal tabs and respects explicit hiding")
+        execute("document.documentElement.style.removeProperty('--tf-display-horizontal-tabs');")
+        check_waterfox_appearance(execute, "horizontal")
+        check_native_density(execute)
     with gecko_profile(browser, preferences=PREFERENCES, theme_dir=ROOT) as (_, _, execute):
         info = execute("return [Services.appinfo.name, Services.appinfo.version];")
         if info[0].lower() != "waterfox":
@@ -271,6 +345,8 @@ def main():
         check_colors(execute)
         check_sidebar(execute)
         check_status_and_motion(execute)
+        execute("window.fullScreen = false;")
+        check_waterfox_appearance(execute, "vertical")
 
 
 if __name__ == "__main__":

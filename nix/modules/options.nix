@@ -140,12 +140,13 @@ in
 
       density = mkOption {
         type = lib.types.enum [
+          "browser"
           "compact"
           "standard"
           "comfortable"
         ];
-        default = "standard";
-        description = "Spacing preset for the browser interface.";
+        default = "browser";
+        description = "Spacing preset for the browser interface. By default, follow the browser density.";
       };
 
       navbar = {
@@ -195,7 +196,7 @@ in
         :root {
           --tf-font-family: ${cfg.font.family};
           --tf-font-size: ${cfg.font.size};
-          --tf-density: ${densityScale.${cfg.density}};
+          ${lib.optionalString (cfg.density != "browser") "--tf-density: ${densityScale.${cfg.density}};"}
           --tf-accent: ${cfg.font.accent};
           --tf-bg: ${cfg.background.color};
           --tf-border: ${cfg.border.color};

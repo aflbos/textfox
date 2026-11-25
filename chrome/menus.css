@@ -3,9 +3,26 @@
   panel
 ):not(.autoscroller) {
   --panel-background: var(--tf-bg) !important;
-  --panel-border-radius: var(--tf-rounding) !important;
+  --panel-background-color: var(--tf-bg) !important;
+  --panel-text-color: var(--lwt-text-color, MenuText) !important;
   --panel-border-color: var(--tf-accent) !important;
   --panel-separator-color: var(--tf-border) !important;
+}
+
+panel:not(.autoscroller) {
+  --panel-border-radius: var(--tf-rounding) !important;
+}
+
+/* Popup widgets draw their visible frame in the exported content part. */
+menupopup,
+menupopup::part(content),
+menupopup :is(menu, menuitem) {
+  border-radius: 0 !important;
+}
+
+menupopup {
+  --panel-border-radius: 0px !important;
+  appearance: none !important;
 }
 slot[part="content"] {
   border-width: var(--border-width) !important;
@@ -22,7 +39,7 @@ slot[part="content"] {
 menu,
 menuitem {
   &:where([_moz-menuactive]:not([disabled="true"])) {
-    background: var(--tab-selected-bgcolor) !important;
+    background: var(--tab-background-color-selected, var(--tab-selected-bgcolor)) !important;
   }
   &:where([_moz-menuactive="true"][disabled="true"]) {
     background: var(--tab-hover-background-color) !important;
@@ -31,8 +48,4 @@ menuitem {
 
 .menupopup-arrowscrollbox {
   border-width: var(--border-width) !important;
-}
-
-menuitem {
-  border-radius: var(--tf-rounding) !important;
 }

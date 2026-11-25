@@ -31,3 +31,11 @@
     --tf-display-horizontal-tabs: none;
   }
 }
+
+:root:where([uidensity="compact"]) {
+  --tf-density: 0.75;
+}
+
+:root:where([uidensity="touch"]) {
+  --tf-density: 1.25;
+}

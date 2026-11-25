@@ -52,10 +52,9 @@ box#vertical-tabs {
     padding: 0 2px;
   }
 
-  #firefox-view-button[open] > .toolbarbutton-icon,
-  .tab-background:is([selected], [multiselected]) {
+  #firefox-view-button[open] > .toolbarbutton-icon {
     box-shadow: none !important;
-    background-color: var(--tab-selected-bgcolor) !important;
+    background-color: var(--tab-background-color-selected, var(--tab-selected-bgcolor)) !important;
   }
 }
 
@@ -87,6 +86,10 @@ box#vertical-tabs {
 .tabbrowser-tab > .tab-stack > .tab-background {
   border: 1px solid var(--tf-border) !important;
   border-radius: var(--tf-rounding) !important;
+}
+
+.tab-background:is([selected], [multiselected]) {
+  background-color: var(--tab-background-color-selected, var(--tab-selected-bgcolor)) !important;
 }
 
 .tabbrowser-tab:hover:not([visuallyselected], [multiselected]) > .tab-stack > .tab-background {

@@ -82,10 +82,12 @@ _a firefox theme for the tui enthusiast_
 
 ## Installation
 
-> [!WARNING]
-> textfox does not yet support Firefox's new "Nova" UI. Until it does, set
-> `browser.nova.enabled` to `false` in `about:config` (the provided `user.js`
-> and the Nix modules do this for you), then restart Firefox.
+In Waterfox, choose Nova, Proton or Photon in **Settings → Appearance**.
+Textfox uses the active browser palette and leaves **Website appearance** under
+Waterfox's control. To re-enable Nova after an older manual installation,
+remove the line that sets `browser.nova.enabled` from the profile's `user.js`,
+restart Waterfox, then select Nova in Settings.
+Context menus and submenus use square corners at every theme rounding setting.
 
 ### Installation script
 
@@ -390,8 +392,9 @@ Here are some example changes that you can do to achieve different looks.
 
 #### Compact or comfortable spacing
 
-Set `--tf-density` in `config.css` to `0.75` for compact spacing or `1.25`
-for comfortable spacing. The standard value is `1`. This adjusts spacing
+Textfox follows the browser's Compact, Normal and Touch settings by default.
+To override the browser setting, set `--tf-density` in `config.css` to `0.75`
+for compact spacing, `1` for standard or `1.25` for comfortable. This adjusts spacing
 around the address bar, tabs, sidebar tools and status bar independently of
 `--tf-font-size`.
 
@@ -402,7 +405,7 @@ around the address bar, tabs, sidebar tools and status bar independently of
 ```
 
 With Home Manager or NixOS, set `textfox.config.density` to `"compact"`,
-`"standard"` or `"comfortable"`.
+`"standard"` or `"comfortable"` to override the default `"browser"`.
 
 #### Swap positions of tabs and window controls when using horizontal tabs
 ```css
