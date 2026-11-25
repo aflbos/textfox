@@ -551,6 +551,49 @@ for (const area of ["menu", "sidebar", "statusbar"]) {{
     print("PASS independent active and neutral colors for menus, sidebar and status bar")
 
 
+def check_tab_hover_preview(execute):
+    execute("""
+const preview = document.getElementById("tab-preview-panel");
+preview.hidden = false;
+preview.openPopupAtScreen(140, 120, false);
+""")
+    wait_for(
+        lambda: execute('return document.getElementById("tab-preview-panel").state;'),
+        lambda state: state == "open",
+        "tab preview panel",
+    )
+    sizes = execute("""
+const { PageWireframes } = ChromeUtils.importESModule("resource:///modules/sessionstore/PageWireframes.sys.mjs");
+const container = document.querySelector("#tab-preview-panel .tab-preview-thumbnail-container");
+container.classList.remove("hide-thumbnail");
+const measure = child => {
+  container.replaceChildren(child);
+  return {
+    container: container.getBoundingClientRect().height,
+    image: child.getBoundingClientRect().height,
+    width: child.getBoundingClientRect().width,
+  };
+};
+const wireframe = height => PageWireframes.getWireframeElement({
+  canvasBackground: 0xff000000,
+  rects: [{ x: 0, y: 0, width: 264, height, color: 0xffffffff }],
+}, document);
+const tall = measure(wireframe(750));
+const short = measure(wireframe(110));
+const canvas = document.createElement("canvas");
+canvas.width = 280;
+canvas.height = 140;
+const snapshot = measure(canvas);
+document.getElementById("tab-preview-panel").hidePopup();
+return { tall, short, snapshot };
+""")
+    assert 0 < sizes["tall"]["container"] <= 148 < sizes["tall"]["image"], sizes
+    assert sizes["short"]["image"] == sizes["short"]["container"] == 110, sizes
+    assert 120 <= sizes["snapshot"]["container"] <= 148, sizes
+    assert all(image["width"] == 264 for image in sizes.values()), sizes
+    print("PASS tall tab wireframes are cropped and normal previews retain their size")
+
+
 def main():
     browser = browser_argument(__doc__)
     tab_height = "return gBrowser.selectedTab.getBoundingClientRect().height;"
@@ -582,6 +625,7 @@ def main():
         check_sine_area_titles(execute, vertical=True)
         check_sine_tree_guides(execute)
         check_sine_area_colors(execute)
+        check_tab_hover_preview(execute)
         check_status_and_motion(execute)
         execute("window.fullScreen = false;")
         check_waterfox_appearance(execute, "vertical")

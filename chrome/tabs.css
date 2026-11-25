@@ -113,6 +113,19 @@ box#vertical-tabs {
   outline-offset: -5px !important;
 }
 
+/* Restored tabs may have an SVG of the entire page instead of a screenshot.
+   Keep the top of that SVG at full width and clip the rest to a 16:9 preview. */
+#tab-preview-panel .tab-preview-thumbnail-container:has(> svg) {
+  max-block-size: 148px;
+  overflow: hidden;
+
+  > svg {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+  }
+}
+
 tabs {
   text-transform: var(--tf-text-transform);
 }
