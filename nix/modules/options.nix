@@ -11,6 +11,11 @@ let
   inherit (lib.types) bool str;
 
   cfg = config.textfox.config;
+  colorAreas = [
+    "menu"
+    "sidebar"
+    "statusbar"
+  ];
   densityScale = {
     compact = "0.75";
     standard = "1";
@@ -70,6 +75,19 @@ in
         default = "var(--lwt-accent-color, -moz-dialog)";
         description = "Background color of all elements.";
       };
+
+      colors = lib.genAttrs colorAreas (area: {
+        background = mkOption {
+          type = lib.types.nullOr str;
+          default = null;
+          description = "CSS background color for the ${area}. Defaults to the Textfox background.";
+        };
+        text = mkOption {
+          type = lib.types.nullOr str;
+          default = null;
+          description = "CSS text color for the ${area}. Defaults to the active theme foreground.";
+        };
+      });
 
       font = {
         family = mkOption {
@@ -202,6 +220,14 @@ in
           ${lib.optionalString (cfg.density != "browser") "--tf-density: ${densityScale.${cfg.density}};"}
           --tf-accent: ${cfg.font.accent};
           --tf-bg: ${cfg.background.color};
+          ${lib.concatMapStringsSep "\n          " (
+            area:
+            let
+              colors = cfg.colors.${area};
+            in
+            lib.optionalString (colors.background != null) "--tf-${area}-background: ${colors.background};"
+            + lib.optionalString (colors.text != null) "\n          --tf-${area}-text: ${colors.text};"
+          ) colorAreas}
           --tf-border: ${cfg.border.color};
           --tf-border-transition: ${cfg.border.transition};
           --tf-border-width: ${cfg.border.width};

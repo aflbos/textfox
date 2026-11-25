@@ -1,5 +1,9 @@
 [
   {
+    "type": "text",
+    "label": "**Interface**"
+  },
+  {
     "type": "dropdown",
     "label": "Densidade da interface",
     "property": "textfox.sine.density",
@@ -62,10 +66,30 @@
     "defaultValue": false
   },
   {
+    "type": "text",
+    "label": "**Abas e barra lateral**"
+  },
+  {
     "type": "checkbox",
     "label": "Ocultar os atalhos da barra lateral",
     "property": "textfox.sine.hideSidebarTools",
     "defaultValue": false
+  },
+  {
+    "type": "dropdown",
+    "label": "Guias das abas em árvore (barra lateral expandida)",
+    "property": "textfox.sine.treeGuides",
+    "defaultValue": "browser",
+    "placeholder": false,
+    "options": [
+      { "label": "Padrão do Waterfox", "value": "browser" },
+      { "label": "Usar a cor de destaque do Textfox", "value": "accent" },
+      { "label": "Ocultar guias", "value": "hidden" }
+    ]
+  },
+  {
+    "type": "text",
+    "label": "**Barras de endereços e status**"
   },
   {
     "type": "checkbox",
@@ -84,18 +108,6 @@
     "label": "Usar a barra de status sem moldura nem título",
     "property": "textfox.sine.discreetStatusBar",
     "defaultValue": false
-  },
-  {
-    "type": "dropdown",
-    "label": "Guias das abas em árvore (barra lateral expandida)",
-    "property": "textfox.sine.treeGuides",
-    "defaultValue": "browser",
-    "placeholder": false,
-    "options": [
-      { "label": "Padrão do Waterfox", "value": "browser" },
-      { "label": "Usar a cor de destaque do Textfox", "value": "accent" },
-      { "label": "Ocultar guias", "value": "hidden" }
-    ]
   },
   {
     "type": "text",
@@ -124,5 +136,45 @@
     "label": "Ocultar o título da barra de status",
     "property": "textfox.sine.hideStatusTitle",
     "defaultValue": false
+  },
+  {
+    "type": "text",
+    "label": "**Cores por área**"
+  },
+  {
+    "type": "dropdown",
+    "label": "Cores dos menus de contexto",
+    "property": "textfox.sine.menuColor",
+    "defaultValue": "textfox",
+    "placeholder": false,
+    "options": [
+      { "label": "Padrão do Textfox", "value": "textfox" },
+      { "label": "Usar as cores de pop-up do tema ativo", "value": "active" },
+      { "label": "Neutras, claras ou escuras", "value": "neutral" }
+    ]
+  },
+  {
+    "type": "dropdown",
+    "label": "Cores da barra lateral",
+    "property": "textfox.sine.sidebarColor",
+    "defaultValue": "textfox",
+    "placeholder": false,
+    "options": [
+      { "label": "Padrão do Textfox", "value": "textfox" },
+      { "label": "Usar as cores da lateral do tema ativo", "value": "active" },
+      { "label": "Neutras, claras ou escuras", "value": "neutral" }
+    ]
+  },
+  {
+    "type": "dropdown",
+    "label": "Cores da barra de status",
+    "property": "textfox.sine.statusbarColor",
+    "defaultValue": "textfox",
+    "placeholder": false,
+    "options": [
+      { "label": "Padrão do Textfox", "value": "textfox" },
+      { "label": "Usar as cores da barra de ferramentas do tema ativo", "value": "active" },
+      { "label": "Neutras, claras ou escuras", "value": "neutral" }
+    ]
   }
 ]

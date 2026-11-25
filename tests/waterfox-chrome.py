@@ -490,6 +490,67 @@ gBrowser.removeTab(document.getElementById("textfox-guide-test-child"), { animat
     print("PASS native, accented and hidden hierarchy guides on a real child tab")
 
 
+def check_sine_area_colors(execute):
+    popup = "document.getElementById('contentAreaContextMenu')"
+    execute(f"{popup}.openPopupAtScreen(120, 120, true);")
+    wait_for(lambda: execute(f"return {popup}.state;"), lambda state: state == "open", "context menu")
+    read = """
+const paint = (background, foreground = background) =>
+  [getComputedStyle(background).backgroundColor, getComputedStyle(foreground).color];
+const menu = document.getElementById("contentAreaContextMenu").shadowRoot.querySelector('[part~="content"]');
+return {
+  menu: paint(menu),
+  sidebar: paint(window.SidebarController.sidebarMain),
+  statusbar: paint(document.getElementById("browser-bottombox"), document.getElementById("status-bar")),
+};
+"""
+    theme = {
+        **DARK_THEME,
+        "popup": "#443448",
+        "popup_text": "#fff8ed",
+        "sidebar": "#233c32",
+        "sidebar_text": "#d5f7e8",
+        "toolbarColor": "#233247",
+        "toolbar_text": "#fff3ff",
+    }
+    execute(THEME_COLORS, theme)
+    baseline = execute(read)
+    assert all(paint[0] == "rgb(21, 25, 35)" for paint in baseline.values()), baseline
+    expected = {
+        "menu": ["rgb(68, 52, 72)", "rgb(255, 248, 237)"],
+        "sidebar": ["rgb(35, 60, 50)", "rgb(213, 247, 232)"],
+        "statusbar": ["rgb(35, 50, 71)", "rgb(255, 243, 255)"],
+    }
+    current = baseline.copy()
+    for area, colors in expected.items():
+        execute('Services.prefs.setStringPref("textfox.sine." + arguments[0] + "Color", "active");', area)
+        current[area] = colors
+        wait_for(lambda: execute(read), lambda colors: colors == current, f"theme colors for {area}")
+    execute(THEME_COLORS, {**theme, "sidebar": "#264639"})
+    expected["sidebar"][0] = "rgb(38, 70, 57)"
+    wait_for(lambda: execute(read), lambda colors: colors == expected, "live color update")
+
+    execute("""
+for (const area of ["menu", "sidebar", "statusbar"]) {
+  Services.prefs.setStringPref("textfox.sine." + area + "Color", "neutral");
+}
+""")
+    neutral = wait_for(
+        lambda: execute(read),
+        lambda colors: all(colors[area] != expected[area] for area in expected),
+        "neutral area colors",
+    )
+    execute(THEME_COLORS, {**theme, "sidebar": "#32473d", "popup": "#442a40", "toolbarColor": "#26364b"})
+    assert execute(read) == neutral, neutral
+    execute(f"""
+{popup}.hidePopup();
+for (const area of ["menu", "sidebar", "statusbar"]) {{
+  Services.prefs.clearUserPref("textfox.sine." + area + "Color");
+}}
+""")
+    print("PASS independent active and neutral colors for menus, sidebar and status bar")
+
+
 def main():
     browser = browser_argument(__doc__)
     tab_height = "return gBrowser.selectedTab.getBoundingClientRect().height;"
@@ -520,6 +581,7 @@ def main():
         check_sidebar(execute)
         check_sine_area_titles(execute, vertical=True)
         check_sine_tree_guides(execute)
+        check_sine_area_colors(execute)
         check_status_and_motion(execute)
         execute("window.fullScreen = false;")
         check_waterfox_appearance(execute, "vertical")

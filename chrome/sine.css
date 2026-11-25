@@ -114,3 +114,45 @@
     display: none;
   }
 }
+
+@media -moz-pref("textfox.sine.menuColor", "active") {
+  :root {
+    --tf-menu-background: var(--panel-background-color, var(--tf-bg));
+    --tf-menu-text: var(--panel-text-color, var(--lwt-text-color, MenuText));
+  }
+}
+
+@media -moz-pref("textfox.sine.menuColor", "neutral") {
+  :root {
+    --tf-menu-background: Canvas;
+    --tf-menu-text: CanvasText;
+  }
+}
+
+@media -moz-pref("textfox.sine.sidebarColor", "active") {
+  :root {
+    --tf-sidebar-background: var(--sidebar-background-color, var(--tf-bg));
+    --tf-sidebar-text: var(--sidebar-text-color, var(--lwt-text-color, CanvasText));
+  }
+}
+
+@media -moz-pref("textfox.sine.sidebarColor", "neutral") {
+  :root {
+    --tf-sidebar-background: Canvas;
+    --tf-sidebar-text: CanvasText;
+  }
+}
+
+@media -moz-pref("textfox.sine.statusbarColor", "active") {
+  :root {
+    --tf-statusbar-background: var(--toolbar-background-color, var(--tf-bg));
+    --tf-statusbar-text: var(--toolbar-text-color, var(--lwt-text-color, CanvasText));
+  }
+}
+
+@media -moz-pref("textfox.sine.statusbarColor", "neutral") {
+  :root {
+    --tf-statusbar-background: Canvas;
+    --tf-statusbar-text: CanvasText;
+  }
+}

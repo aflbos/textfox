@@ -1,16 +1,13 @@
-:is(
-  menupopup,
-  panel
-):not(.autoscroller) {
+panel:not(.autoscroller) {
   --panel-background: var(--tf-bg) !important;
   --panel-background-color: var(--tf-bg) !important;
   --panel-text-color: var(--lwt-text-color, MenuText) !important;
-  --panel-border-color: var(--tf-accent) !important;
-  --panel-separator-color: var(--tf-border) !important;
+  --panel-border-radius: var(--tf-rounding) !important;
 }
 
-panel:not(.autoscroller) {
-  --panel-border-radius: var(--tf-rounding) !important;
+:is(menupopup, panel):not(.autoscroller) {
+  --panel-border-color: var(--tf-accent) !important;
+  --panel-separator-color: var(--tf-border) !important;
 }
 
 /* Popup widgets draw their visible frame in the exported content part. */
@@ -21,8 +18,15 @@ menupopup :is(menu, menuitem) {
 }
 
 menupopup {
+  --panel-background: var(--tf-menu-background) !important;
+  --panel-background-color: var(--tf-menu-background) !important;
+  --panel-text-color: var(--tf-menu-text) !important;
   --panel-border-radius: 0px !important;
   appearance: none !important;
+}
+
+menupopup :is(menu, menuitem)[_moz-menuactive]:not([disabled="true"]) {
+  background: color-mix(in srgb, var(--tf-menu-text) 15%, transparent) !important;
 }
 slot[part="content"] {
   border-width: var(--border-width) !important;

@@ -14,9 +14,10 @@
   box-shadow: none !important;
 }
 
-:root[lwtheme] :is(sidebar-main, #sidebar-main) {
-  background-color: var(--tf-bg) !important;
+:is(sidebar-main, #sidebar-main) {
+  background-color: var(--tf-sidebar-background) !important;
   background-image: unset !important;
+  color: var(--tf-sidebar-text) !important;
 }
 #sidebar-box {
   font-size: unset !important;
@@ -25,7 +26,8 @@
   border: var(--border-width) solid var(--tf-border);
   border-radius: var(--tf-rounding) !important;
   transition: border-color var(--tf-border-transition);
-  background: var(--tf-bg) !important;
+  background: var(--tf-sidebar-background) !important;
+  color: var(--tf-sidebar-text) !important;
   &:hover {
     border-color: var(--tf-accent) !important;
   }
@@ -34,14 +36,11 @@
     z-index: 1;
     font-size: var(--tf-font-size);
     content: "tool";
-    color: var(--lwt-text-color);
-    background-color: var(--tf-bg);
+    color: var(--tf-sidebar-text);
+    background-color: var(--tf-sidebar-background);
     position: absolute;
     margin: -1.75rem 0rem;
     padding: 0 4px;
-  }
-  &:hover::before {
-    color: var(--tf-accent);
   }
 }
 
@@ -62,13 +61,10 @@
     display: var(--tf-display-titles);
     position: absolute;
     content: "tools";
-    color: var(--lwt-text-color);
-    background-color: var(--tf-bg);
+    color: var(--tf-sidebar-text);
+    background-color: var(--tf-sidebar-background);
     margin: 3.25rem .4rem;
     padding: 0 4px;
-  }
-  &:hover::before {
-    color: var(--tf-accent);
   }
 }
 

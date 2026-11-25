@@ -59,6 +59,11 @@ _a firefox theme for the tui enthusiast_
 >   Com as abas em árvore e a lateral expandida, as guias podem seguir o
 >   Waterfox, usar a cor de destaque do Textfox ou ficar ocultas. Os títulos
 >   podem ser ocultados por área, e a opção geral continua ocultando todos.
+>   Em **Cores por área**, menus de contexto, barra lateral e barra de status
+>   podem usar o padrão do Textfox, cores neutras ou as cores do tema ativo.
+>   Com o Adaptive Tab Bar Colour, as duas primeiras áreas usam suas cores
+>   de pop-up e lateral, respectivamente. A barra de status usa as cores
+>   da barra de ferramentas.
 >   As escolhas ficam no perfil do navegador e são mantidas quando o
 >   instalador atualiza o mod. Regras personalizadas em `config.css` têm
 >   precedência sobre essas opções.

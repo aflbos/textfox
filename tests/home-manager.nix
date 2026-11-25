@@ -29,6 +29,10 @@ let
         textfox = {
           enable = true;
           config.density = "comfortable";
+          config.colors.menu = {
+            background = "Canvas";
+            text = "CanvasText";
+          };
           profiles = [
             "work"
             "plain"
@@ -48,6 +52,8 @@ pkgs.runCommand "textfox-home-manager-profiles" { } ''
       head -n1 "$profile/chrome/$entry.css" | grep -Fx "@import url(\"textfox-$entry.css\");"
     done
     grep -F -- '--tf-density: 1.25;' "$profile/chrome/config.css"
+    grep -F -- '--tf-menu-background: Canvas;' "$profile/chrome/config.css"
+    grep -F -- '--tf-menu-text: CanvasText;' "$profile/chrome/config.css"
     test -s "$profile/chrome/content/newtab.css"
     test -s "$profile/chrome/icons/tab.svg"
   done

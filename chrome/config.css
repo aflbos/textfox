@@ -76,11 +76,8 @@
     findbar,
     #nav-bar,
     #PersonalToolbar,
-    #sidebar-box,
-    .buttons-wrapper,
     box#vertical-tabs,
-    #TabsToolbar,
-    #status-bar
+    #TabsToolbar
   )::before {
   color: var(--toolbarbutton-icon-fill) !important;
 }

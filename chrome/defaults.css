@@ -4,6 +4,12 @@
   --tf-density: 1; /* Spacing multiplier: .75 compact, 1 standard, 1.25 comfortable. */
   --tf-accent: var(--toolbarbutton-icon-fill); /* Accent color used, eg: color when hovering a container  */
   --tf-bg: var(--lwt-accent-color, -moz-dialog); /* Background color of all elements, tab colors derive from this */
+  --tf-menu-background: var(--tf-bg);
+  --tf-menu-text: var(--lwt-text-color, MenuText);
+  --tf-sidebar-background: var(--tf-bg);
+  --tf-sidebar-text: var(--lwt-text-color, CanvasText);
+  --tf-statusbar-background: var(--tf-bg);
+  --tf-statusbar-text: var(--lwt-text-color, CanvasText);
   --tf-border: var(--panel-border-color, var(--toolbar-field-background-color)); /* Border color when not hovered */
   --tf-border-transition: 0.2s ease; /* Smooth color transitions for borders */
   --tf-border-width: 2px; /* Width of borders */

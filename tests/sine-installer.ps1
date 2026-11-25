@@ -83,7 +83,7 @@ $cases = [ordered]@{
     $prefsPath = Join-Path $profile.Mod $data.$modId.preferences
     $prefs = Get-Content -LiteralPath $prefsPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $controls = @($prefs | Where-Object property)
-    Assert-True ($controls.Count -eq 15) "O pacote não oferece os quinze controles esperados."
+    Assert-True ($controls.Count -eq 18) "O pacote não oferece os dezoito controles esperados."
     $entrypoint = Join-Path $profile.Mod $data.$modId.style.chrome
     Assert-True (Test-Path -LiteralPath $entrypoint -PathType Leaf) "O CSS registrado não existe."
     $firstBackup = @(Get-Backups $profile)
