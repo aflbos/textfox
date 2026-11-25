@@ -66,5 +66,23 @@
     "label": "Ocultar os atalhos da barra lateral",
     "property": "textfox.sine.hideSidebarTools",
     "defaultValue": false
+  },
+  {
+    "type": "checkbox",
+    "label": "Mostrar ações da barra de endereços (favoritar, traduzir e outras)",
+    "property": "textfox.sine.showUrlbarActions",
+    "defaultValue": false
+  },
+  {
+    "type": "checkbox",
+    "label": "Ocultar indicadores de proteção contra rastreamento e de contêiner",
+    "property": "textfox.sine.hideUrlbarIndicators",
+    "defaultValue": false
+  },
+  {
+    "type": "checkbox",
+    "label": "Usar a barra de status sem moldura nem título",
+    "property": "textfox.sine.discreetStatusBar",
+    "defaultValue": false
   }
 ]

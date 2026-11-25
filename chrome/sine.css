@@ -78,3 +78,15 @@
     --tf-display-sidebar-tools: none;
   }
 }
+
+@media -moz-pref("textfox.sine.showUrlbarActions") {
+  :root {
+    --tf-display-urlbar-icons: initial;
+  }
+}
+
+@media -moz-pref("textfox.sine.hideUrlbarIndicators") {
+  :root {
+    --tf-display-urlbar-indicators: none;
+  }
+}

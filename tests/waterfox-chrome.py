@@ -367,6 +367,68 @@ Services.prefs.setBoolPref("textfox.sine.hideSidebarTools", false);
     print("PASS Sine appearance preferences override and restore theme defaults")
 
 
+def check_sine_urlbar_and_status(execute):
+    styles = """
+const style = (id) => getComputedStyle(document.getElementById(id));
+return {
+  shield: style("tracking-protection-icon-container").display,
+  container: style("userContext-icons").display,
+  bookmark: style("star-button-box").display,
+  translation: style("translations-button").display,
+  identity: style("identity-box").display,
+  status: style("status-bar").display,
+  statusText: style("statuspanel-label").display,
+  link: document.getElementById("statuspanel-label").value,
+  statusBorder: style("status-bar").borderTopWidth,
+  statusTitle: getComputedStyle(document.getElementById("status-bar"), "::before").display,
+};
+"""
+    execute("""
+gBrowser.selectedBrowser.loadURI(Services.io.newURI("data:text/html,<title>Address controls</title>"), {
+  triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
+});
+""")
+    wait_for(
+        lambda: execute('return gURLBar.getAttribute("pageproxystate");'),
+        lambda state: state == "valid",
+        "address bar did not reach a valid page",
+    )
+    execute("""
+// Model an available container indicator. Translation stays unavailable.
+document.getElementById("userContext-icons").hidden = false;
+XULBrowserWindow.setOverLink("https://example.invalid/status");
+""")
+    before = wait_for(
+        lambda: execute(styles),
+        lambda css: css["link"] == "https://example.invalid/status",
+        "status bar did not show the hovered link",
+    )
+    assert before["container"] != "none" and before["bookmark"] == "none", before
+    assert before["translation"] == "none" and before["statusBorder"] == "2px", before
+    execute("""
+Services.prefs.setBoolPref("textfox.sine.showUrlbarActions", true);
+Services.prefs.setBoolPref("textfox.sine.hideUrlbarIndicators", true);
+Services.prefs.setBoolPref("textfox.sine.discreetStatusBar", true);
+""")
+    after = wait_for(
+        lambda: execute(styles),
+        lambda css: css["bookmark"] != "none" and css["container"] == "none"
+        and css["shield"] == "none" and css["statusBorder"] == "0px",
+        "address bar and status preferences",
+    )
+    assert after["translation"] == "none" and after["identity"] == before["identity"], after
+    assert after["statusTitle"] == "none", after
+    assert after["status"] == before["status"] and after["statusText"] == before["statusText"], after
+    assert after["link"] == before["link"], after
+    execute("""
+Services.prefs.clearUserPref("textfox.sine.showUrlbarActions");
+Services.prefs.clearUserPref("textfox.sine.hideUrlbarIndicators");
+Services.prefs.clearUserPref("textfox.sine.discreetStatusBar");
+""")
+    wait_for(lambda: execute(styles), lambda css: css == before, "address bar and status defaults")
+    print("PASS separate address bar indicators and actions, and borderless status bar")
+
+
 def main():
     browser = browser_argument(__doc__)
     tab_height = "return gBrowser.selectedTab.getBoundingClientRect().height;"
@@ -391,6 +453,7 @@ def main():
         assert execute("return document.getElementById('TabsToolbar').getBoundingClientRect().height;") == 0
         check_tab_states(execute, "vertical")
         check_density(execute, vertical=True)
+        check_sine_urlbar_and_status(execute)
         check_colors(execute)
         check_sidebar(execute)
         check_status_and_motion(execute)

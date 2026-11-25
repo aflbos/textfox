@@ -36,6 +36,17 @@
   }
 }
 
+/* The compact frame treatment keeps the status text and controls available. */
+@media -moz-pref("textfox.sine.discreetStatusBar") {
+  #status-bar {
+    margin: 0 !important;
+    border: none !important;
+    &::before {
+      display: none;
+    }
+  }
+}
+
 /* Mesmo comportamento do textfox em tela cheia: sem moldura. */
 :root[inFullscreen="true"] #status-bar {
   margin: 0 !important;

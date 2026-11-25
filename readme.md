@@ -53,7 +53,10 @@ _a firefox theme for the tui enthusiast_
 >   ajustar a densidade, o tamanho da fonte, a espessura e os cantos das
 >   molduras. Também é possível ocultar os títulos e os atalhos da barra lateral
 >   e desativar as animações do Textfox. Os menus de contexto mantêm os cantos
->   retos. As escolhas ficam no perfil do navegador e são mantidas quando o
+>   retos. As ações da barra de endereços ficam em um controle separado dos
+>   indicadores de proteção e contêiner. A barra de status pode ser exibida sem
+>   moldura e sem título, com os controles e o texto de status disponíveis.
+>   As escolhas ficam no perfil do navegador e são mantidas quando o
 >   instalador atualiza o mod. Regras personalizadas em `config.css` têm
 >   precedência sobre essas opções.
 > - Para remover o mod local:
@@ -373,7 +376,8 @@ The theme ships with a `defaults.css`. Its values can be overridden in
   /* --tf-display-horizontal-tabs: none; */ /* Optional: hide horizontal tabs when using an extension. */
   --tf-display-window-controls: none; /* If the window controls should be shown (won't work with sidebery and hidden horizontal tabs), none = hidden, flex = shown */ 
   --tf-display-nav-buttons: none; /* If the navigation buttons (back, forward) should be shown, none = hidden, flex = shown */
-  --tf-display-urlbar-icons: none; /* If the icons inside the url bar should be shown, none = hidden, flex = shown */
+  --tf-display-urlbar-icons: none; /* Page actions: none = hidden, initial = browser visibility */
+  --tf-display-urlbar-indicators: initial; /* Tracking protection and container indicators */
   --tf-display-sidebar-tools: flex; /* Sidebar shortcuts: none = hidden, flex = shown */
   --tf-display-titles: flex; /* If titles (tabs, navbar, main etc.) should be shown, none = hidden, flex = shown */
   --tf-newtab-logo: "   __            __  ____          \A   / /____  _  __/ /_/ __/___  _  __\A  / __/ _ \\| |/_/ __/ /_/ __ \\| |/_/\A / /_/  __/>  </ /_/ __/ /_/ />  <  \A \\__/\\___/_/|_|\\__/_/  \\____/_/|_|  ";

@@ -12,7 +12,8 @@
   --tf-display-horizontal-tabs: block; /* Hide with none when using an extension tab bar. */
   --tf-display-window-controls: none; /* If the window controls should be shown (won't work with sidebery and hidden horizontal tabs), none = hidden, flex = shown */
   --tf-display-nav-buttons: none; /* If the navigation buttons (back, forward) should be shown, none = hidden, flex = shown */
-  --tf-display-urlbar-icons: none; /* If the icons inside the url bar should be shown, none = hidden, flex = shown */
+  --tf-display-urlbar-icons: none; /* Page actions: none = hidden, initial = browser visibility. */
+  --tf-display-urlbar-indicators: initial; /* Tracking protection and container indicators: initial = browser visibility, none = hidden. */
   --tf-display-sidebar-tools: flex; /* Sidebar shortcuts: none = hidden, flex = shown. */
   --tf-display-titles: flex; /* If titles (tabs, navbar, main etc.) should be shown, none = hidden, flex = shown */
   --tf-newtab-logo: "   __            __  ____          \A   / /____  _  __/ /_/ __/___  _  __\A  / __/ _ \\| |/_/ __/ /_/ __ \\| |/_/\A / /_/  __/>  </ /_/ __/ /_/ />  <  \A \\__/\\___/_/|_|\\__/_/  \\____/_/|_|  ";

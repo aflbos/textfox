@@ -5,48 +5,19 @@
   --urlbar-container-height: var(--urlbar-toolbar-height) !important;
 }
 
-/* hide stuff */
-#userContext-icons,
-#translations-button-icon,
-#tracking-protection-icon-container,
-#star-button-box,
+/* Let the browser decide when each action is available. */
 .urlbar-page-action:not([hidden]) {
-  display: var(--tf-display-urlbar-icons);
+  display: var(--tf-display-urlbar-icons, revert);
+}
+
+:is(#userContext-icons, #tracking-protection-icon-container):not([hidden]) {
+  display: var(--tf-display-urlbar-indicators, revert);
 }
 
 /* configurable navigation buttons */
 #back-button,
 #forward-button {
   display: var(--tf-display-nav-buttons);
-}
-
-/* 
-   hide elements of the identity box when:
-   the page is secure (using https) and the domain is verified
-   or when mixed content is blocked
-*/
-#identity-box[pageproxystate="valid"] {
-  &.verifiedDomain {
-    #identity-permission-box:not([hasSharingIcon]),
-    #permissions-granted-icon {
-      display: var(--tf-display-urlbar-icons) !important;
-    }
-    #permissions-granted-icon + box:has(image[sharing="true"]) {
-      margin-left: -4px;
-    }
-    #identity-icon {
-      list-style-image: unset !important;
-    }
-  }
-  &.mixedActiveBlocked {
-    #permissions-granted-icon,
-    #identity-permission-box:not([hasSharingIcon]) {
-      display: var(--tf-display-urlbar-icons) !important;
-    }
-    #permissions-granted-icon + box:has(image[sharing="true"]) {
-      margin-left: -4px;
-    }
-  }
 }
 
 #navigator-toolbox {

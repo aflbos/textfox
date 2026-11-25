@@ -38,7 +38,10 @@ in
     config = {
       displayWindowControls = mkEnableOption "window controls.";
       displayNavButtons = mkEnableOption "back and forward navigation buttons in the Firefox UI.";
-      displayUrlbarIcons = mkEnableOption "icons inside url bar.";
+      displayUrlbarIcons = mkEnableOption "page actions inside the address bar.";
+      displayUrlbarIndicators = mkEnableOption "tracking protection and container indicators in the address bar." // {
+        default = true;
+      };
       displaySidebarTools = mkEnableOption "sidebar tools section." // {
         default = true;
       };
@@ -207,7 +210,8 @@ in
           ${lib.optionalString (cfg.tabs.horizontal.enable != null) "--tf-display-horizontal-tabs: ${if cfg.tabs.horizontal.enable then "block" else "none"};"}
           --tf-display-window-controls: ${if cfg.displayWindowControls then "flex" else "none"};
           --tf-display-nav-buttons: ${if cfg.displayNavButtons then "flex" else "none"};
-          --tf-display-urlbar-icons: ${if cfg.displayUrlbarIcons then "flex" else "none"};
+          --tf-display-urlbar-icons: ${if cfg.displayUrlbarIcons then "initial" else "none"};
+          --tf-display-urlbar-indicators: ${if cfg.displayUrlbarIndicators then "initial" else "none"};
           --tf-display-sidebar-tools: ${if cfg.displaySidebarTools then "flex" else "none"};
           --tf-display-titles: ${if cfg.displayTitles then "flex" else "none"};
           --tf-newtab-logo: "${cfg.newtabLogo}";
