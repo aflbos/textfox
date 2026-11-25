@@ -50,6 +50,9 @@ _a firefox theme for the tui enthusiast_
 >   o mod em `chrome\sine-mods\textfox-waterfox`, desliga as atualizações
 >   automáticas para essa cópia e desabilita o textfox original, se estiver ativo.
 >   Ao reordenar abas na mesma janela, o Textfox mostra uma linha no destino.
+>   Nas abas em árvore, as bordas superior e inferior servem para reordenar,
+>   e o terço central mostra um contorno para soltar como filha.
+>   Na grade de fixadas, a linha acompanha a posição entre blocos e fileiras.
 >   Este indicador usa um script local e requer que o Sine permita JavaScript
 >   dos mods locais (`sine.allow-unsafe-js`). A instalação mantém essa
 >   preferência do navegador.

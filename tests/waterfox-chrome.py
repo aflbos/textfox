@@ -987,6 +987,21 @@ return false;
 """), bool, f"{orientation} drop indicator behind the dragged tab")
     execute('window.textfoxTestDrag.first.querySelector(".tab-background").style.removeProperty("translate");')
     if orientation == "vertical":
+        assert execute("""
+const { first, third, eventAt } = window.textfoxTestDrag;
+const transfer = eventAt("dragover", third, 0.5).dataTransfer;
+const tree = window.TreeTabsDnD;
+const row = tree._getRowBounds(third);
+const x = Math.round(third.getBoundingClientRect().left + 10);
+return [0.28, 0.5, 0.72].map(fraction => {
+  const y = row.top + row.height * fraction;
+  const event = new DragEvent("dragover", {
+    bubbles: true, cancelable: true, dataTransfer: transfer, clientX: x, clientY: y,
+    screenX: window.mozInnerScreenX + x, screenY: window.mozInnerScreenY + y,
+  });
+  return tree.getAttachTarget(gBrowser.tabContainer, event, first) === third;
+});
+""") == [False, True, False], "Only the middle third should attach a tab"
         execute("""
 const drag = window.textfoxTestDrag;
 const event = drag.eventAt("dragover", drag.third, 0.5);
@@ -1033,6 +1048,91 @@ delete window.textfoxTestDrag;
     print(f"PASS {orientation} drag stays centered, highlights the native drop edge and clears on drop")
 
 
+def check_pinned_row_drop(execute):
+    execute("""
+const controller = window.SidebarController;
+if (!controller.sidebarMain.expanded) controller.handleToolbarButtonClick();
+const pins = [];
+for (let i = 0; i < 6; i++) {
+  const tab = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
+  gBrowser.pinTab(tab);
+  pins.push(tab);
+}
+window.textfoxTestPins = { pins };
+""")
+    try:
+        wait_for(
+            lambda: execute("""
+const { pins } = window.textfoxTestPins;
+const rows = pins.map(tab => tab.getBoundingClientRect().top);
+return gBrowser.tabContainer.isContainerVerticalPinnedGrid(pins[0])
+  && rows[0] === rows[2] && rows[2] < rows[3] && rows[3] === rows[5];
+"""),
+            bool, "two pinned rows ready for drag",
+        )
+        execute("""
+const drag = window.textfoxTestPins;
+const [first] = drag.pins;
+const transfer = new DataTransfer();
+drag.boxes = drag.pins.map(tab => tab.getBoundingClientRect());
+drag.eventAt = (type, index) => {
+  const box = drag.boxes[index];
+  const x = Math.round(box.left + box.width / 2);
+  const y = Math.round(box.top + box.height / 2);
+  return new DragEvent(type, {
+    bubbles: true, cancelable: true, dataTransfer: transfer, clientX: x, clientY: y,
+    screenX: window.mozInnerScreenX + x, screenY: window.mozInnerScreenY + y,
+  });
+};
+first.dispatchEvent(drag.eventAt("dragstart", 0));
+transfer.dropEffect = "move";
+drag.pins[1].dispatchEvent(drag.eventAt("dragover", 1));
+""")
+        for index in (2, 3):
+            execute("""
+const { pins, eventAt } = window.textfoxTestPins;
+const index = arguments[0];
+pins[index].dispatchEvent(eventAt("dragover", index));
+""", index)
+            wait_for(
+                lambda: execute("""
+const indicator = document.getElementById("textfox-tab-drop-position");
+if (indicator.hidden) return null;
+const index = arguments[0];
+const { boxes, pins } = window.textfoxTestPins;
+const line = indicator.getBoundingClientRect();
+const aligned = index === 3
+  ? line.height === 3 && Math.abs(line.top + 1.5 - boxes[index].top) < 1
+  : line.width === 3 && Math.abs(line.left + 1.5 - boxes[index].left) < 1
+    && Math.abs(line.top - boxes[index].top) <= 2;
+return { aligned, nativeIndex: pins[0]._dragData?.animDropElementIndex,
+         line: [line.left, line.top, line.width, line.height],
+         expected: [boxes[index].left, boxes[index].top] };
+""", index),
+                lambda marker: marker["aligned"], f"pinned grid marker at slot {index}",
+            )
+        execute("""
+const { pins, eventAt } = window.textfoxTestPins;
+pins[3].dispatchEvent(eventAt("drop", 3));
+""")
+        wait_for(
+            lambda: execute("""
+return window.textfoxTestPins.pins[0]._tPos === 3
+  && document.getElementById("textfox-tab-drop-position").hidden;
+"""),
+            bool, "pinned tab moved to the start of the next row",
+        )
+    finally:
+        execute("""
+gBrowser.tabContainer.tabDragAndDrop.finishAnimateTabMove();
+for (const tab of window.textfoxTestPins.pins) gBrowser.removeTab(tab, { animate: false });
+delete window.textfoxTestPins;
+const controller = window.SidebarController;
+if (controller.sidebarMain.expanded) controller.handleToolbarButtonClick();
+""")
+    print("PASS pinned drop marker follows the destination slot across rows")
+
+
 def main():
     browser = browser_argument(__doc__)
     tab_height = "return gBrowser.selectedTab.getBoundingClientRect().height;"
@@ -1076,6 +1176,7 @@ def main():
         check_compact_frame_titles(execute, vertical=True)
         check_expanded_pinned_grid(execute)
         check_pinned_favicon_cache(execute)
+        check_pinned_row_drop(execute)
 
 
 if __name__ == "__main__":

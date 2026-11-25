@@ -20,11 +20,33 @@
   function hide() {
     window.cancelAnimationFrame(update);
     indicator.hidden = true;
+    tabs.removeAttribute("textfox-drop-between");
   }
 
   const dragAndDrop = tabs.tabDragAndDrop;
   const updateTabStyles = dragAndDrop?._updateTabStylesOnDrag;
+  const treeDnD = window.TreeTabsDnD;
+  const nativeAttachTarget = treeDnD?.getAttachTarget;
   const centeredDrags = new WeakSet();
+
+  function getAttachTarget(container, event, dragged, ...args) {
+    const target = nativeAttachTarget.call(this, container, event, dragged, ...args);
+    if (!target || container !== tabs || dragged.container !== tabs ||
+        dragged._dragData?.fromTabList || dragAndDrop?.getDropEffectForTabDrag(event) !== "move") {
+      return target;
+    }
+
+    // Use the same unanimated bounds as Waterfox for dragover and drop.
+    const row = this._getRowBounds(target);
+    const inset = row.height / 3;
+    return event.clientY >= row.top + inset && event.clientY <= row.bottom - inset
+      ? target
+      : null;
+  }
+
+  if (typeof nativeAttachTarget === "function" && typeof treeDnD._getRowBounds === "function") {
+    treeDnD.getAttachTarget = getAttachTarget;
+  }
 
   function centerDraggedTab(dragged, dropEffect) {
     const result = updateTabStyles.call(this, dragged, dropEffect);
@@ -64,6 +86,26 @@
     return `linear-gradient(${direction}, currentColor ${from}, transparent ${from} ${to}, currentColor ${to})`;
   }
 
+  function getPinnedSlot(data, target, item, rtl) {
+    const index = data.animDropElementIndex;
+    const columns = dragAndDrop?._maxTabsPerRow;
+    const reference = target.currentIndex ?? target.elementIndex;
+    if (!Number.isInteger(index) || !Number.isInteger(reference) || !columns) return null;
+
+    // The native index counts the moved tabs. The new slot does not.
+    const slot = index - data.movingTabs.filter(tab => tab.elementIndex < index).length;
+    const column = slot % columns;
+    const columnDelta = column - reference % columns;
+    const rowDelta = Math.floor(slot / columns) - Math.floor(reference / columns);
+    const transform = new DOMMatrixReadOnly(getComputedStyle(target).transform);
+    const left = item.left - transform.m41 + columnDelta * item.width * (rtl ? -1 : 1);
+    const top = item.top - transform.m42 + rowDelta * item.height;
+    return {
+      rect: new DOMRect(left, top, item.width, item.height),
+      rowBreak: slot > 0 && column === 0,
+    };
+  }
+
   function showPosition(dragged) {
     const data = dragged._dragData;
     const target = data?.dropElement;
@@ -76,17 +118,22 @@
       return false;
     }
 
-    const vertical = tabs.verticalMode && !tabs.isContainerVerticalPinnedGrid?.(dragged);
+    const grid = tabs.isContainerVerticalPinnedGrid?.(dragged);
     const rtl = getComputedStyle(tabs).direction === "rtl";
+    const slot = grid ? getPinnedSlot(data, target, item, rtl) : null;
+    const vertical = tabs.verticalMode && (!grid || slot?.rowBreak);
     const viewport = (dragged.pinned
       ? tabs.pinnedTabsContainer?.getBoundingClientRect()
       : tabs.arrowScrollbox?.scrollClientRect) ?? tabs.getBoundingClientRect();
-    const drawBefore = vertical ? data.dropBefore : data.dropBefore !== rtl;
+    const destination = slot?.rect ?? item;
+    const before = Boolean(slot) || data.dropBefore;
+    const drawBefore = vertical ? before : before !== rtl;
     const targetEdge = vertical
-      ? (drawBefore ? item.top : item.bottom)
-      : (drawBefore ? item.left : item.right);
-    const start = vertical ? Math.max(item.left, viewport.left) : Math.max(item.top, viewport.top);
-    const end = vertical ? Math.min(item.right, viewport.right) : Math.min(item.bottom, viewport.bottom);
+      ? (drawBefore ? destination.top : destination.bottom)
+      : (drawBefore ? destination.left : destination.right);
+    const span = slot?.rowBreak ? viewport : destination;
+    const start = vertical ? Math.max(span.left, viewport.left) : Math.max(span.top, viewport.top);
+    const end = vertical ? Math.min(span.right, viewport.right) : Math.min(span.bottom, viewport.bottom);
     const axisStart = vertical ? viewport.top : viewport.left;
     const axisEnd = vertical ? viewport.bottom : viewport.right;
     if (end <= start) {
@@ -107,7 +154,9 @@
       hide();
       return;
     }
-    indicator.hidden = !showPosition(dragged);
+    const visible = showPosition(dragged);
+    indicator.hidden = !visible;
+    tabs.toggleAttribute("textfox-drop-between", visible);
     update = window.requestAnimationFrame(() => followPosition(dragged));
   }
 
@@ -122,7 +171,7 @@
       return;
     }
     // Waterfox already highlights the parent for a drop that creates a child.
-    if (window.TreeTabsDnD?.getAttachTarget?.(tabs, event, dragged)) {
+    if (treeDnD?.getAttachTarget?.(tabs, event, dragged)) {
       return;
     }
     update = window.requestAnimationFrame(() => followPosition(dragged));
@@ -142,6 +191,9 @@
     indicator.remove();
     if (dragAndDrop?._updateTabStylesOnDrag === centerDraggedTab) {
       dragAndDrop._updateTabStylesOnDrag = updateTabStyles;
+    }
+    if (treeDnD?.getAttachTarget === getAttachTarget) {
+      treeDnD.getAttachTarget = nativeAttachTarget;
     }
   });
 })();
