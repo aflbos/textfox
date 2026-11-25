@@ -301,7 +301,10 @@ return {
             f"{style} context menu did not open",
         )
         assert popup == {"state": "open", "appearance": "none", "radius": "0px", "itemRadius": "0px"}, popup
-        execute("document.getElementById('contentAreaContextMenu').hidePopup();")
+        execute("""
+document.getElementById("contentAreaContextMenu").hidePopup();
+document.documentElement.style.removeProperty("--tf-rounding");
+""")
     print(f"PASS Nova, Proton and Photon palettes and square context menus ({orientation})")
 
 
@@ -325,23 +328,42 @@ Services.prefs.setIntPref("browser.uidensity", 2);
 Services.prefs.setStringPref("textfox.sine.density", "compact");
 Services.prefs.setStringPref("textfox.sine.border", "thick");
 Services.prefs.setBoolPref("textfox.sine.hideTitles", true);
+Services.prefs.setStringPref("textfox.sine.fontSize", "large");
+Services.prefs.setStringPref("textfox.sine.rounding", "rounded");
+Services.prefs.setBoolPref("textfox.sine.disableMotion", true);
+Services.prefs.setBoolPref("textfox.sine.hideSidebarTools", true);
 """)
+
     def read_styles():
         return execute("""
 const navbar = document.querySelector("#nav-bar");
+const toolbar = getComputedStyle(navbar);
+const sidebarTools = window.SidebarController.sidebarMain?.shadowRoot?.querySelector(".buttons-wrapper");
+if (!sidebarTools) return null;
 return [
-  getComputedStyle(navbar).paddingTop,
-  getComputedStyle(navbar).borderTopWidth,
+  toolbar.paddingTop,
+  toolbar.borderTopWidth,
   getComputedStyle(navbar, "::before").display,
+  getComputedStyle(document.getElementById("urlbar-input")).fontSize,
+  toolbar.borderRadius,
+  toolbar.transitionDuration,
+  getComputedStyle(sidebarTools).display,
 ];
 """)
-    wait_for(read_styles, lambda styles: styles == ["3px", "3px", "none"], "Sine preferences")
+
+    enabled = ["3px", "3px", "none", "16px", "8px", "0s", "none"]
+    wait_for(read_styles, lambda styles: styles == enabled, "Sine preferences")
     execute("""
 Services.prefs.setStringPref("textfox.sine.density", "browser");
 Services.prefs.setStringPref("textfox.sine.border", "theme");
 Services.prefs.setBoolPref("textfox.sine.hideTitles", false);
+Services.prefs.setStringPref("textfox.sine.fontSize", "theme");
+Services.prefs.setStringPref("textfox.sine.rounding", "theme");
+Services.prefs.setBoolPref("textfox.sine.disableMotion", false);
+Services.prefs.setBoolPref("textfox.sine.hideSidebarTools", false);
 """)
-    wait_for(read_styles, lambda styles: styles == ["5px", "2px", "flex"], "Sine defaults")
+    defaults = ["5px", "2px", "flex", "14px", "0px", "0.2s", "flex"]
+    wait_for(read_styles, lambda styles: styles == defaults, "Sine defaults")
     print("PASS Sine appearance preferences override and restore theme defaults")
 
 

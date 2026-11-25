@@ -35,3 +35,46 @@
     --tf-display-titles: none;
   }
 }
+
+@media -moz-pref("textfox.sine.fontSize", "small") {
+  :root {
+    --tf-font-size: 12px;
+  }
+}
+
+@media -moz-pref("textfox.sine.fontSize", "large") {
+  :root {
+    --tf-font-size: 16px;
+  }
+}
+
+@media -moz-pref("textfox.sine.rounding", "square") {
+  :root {
+    --tf-rounding: 0px;
+  }
+}
+
+@media -moz-pref("textfox.sine.rounding", "soft") {
+  :root {
+    --tf-rounding: 4px;
+  }
+}
+
+@media -moz-pref("textfox.sine.rounding", "rounded") {
+  :root {
+    --tf-rounding: 8px;
+  }
+}
+
+@media -moz-pref("textfox.sine.disableMotion") {
+  :root {
+    --tf-animation-duration: 0s;
+    --tf-border-transition: 0s;
+  }
+}
+
+@media -moz-pref("textfox.sine.hideSidebarTools") {
+  :root {
+    --tf-display-sidebar-tools: none;
+  }
+}

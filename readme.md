@@ -50,8 +50,10 @@ _a firefox theme for the tui enthusiast_
 >   o mod em `chrome\sine-mods\textfox-waterfox`, desliga as atualizações
 >   automáticas para essa cópia e desabilita o textfox original, se estiver ativo.
 > - No painel do Sine, abra as preferências do mod **textfox (Waterfox)** para
->   escolher a densidade, a espessura das molduras ou ocultar os títulos das
->   áreas. As escolhas ficam no perfil do navegador e são mantidas quando o
+>   ajustar a densidade, o tamanho da fonte, a espessura e os cantos das
+>   molduras. Também é possível ocultar os títulos e os atalhos da barra lateral
+>   e desativar as animações do Textfox. Os menus de contexto mantêm os cantos
+>   retos. As escolhas ficam no perfil do navegador e são mantidas quando o
 >   instalador atualiza o mod. Regras personalizadas em `config.css` têm
 >   precedência sobre essas opções.
 > - Para remover o mod local:
@@ -372,7 +374,7 @@ The theme ships with a `defaults.css`. Its values can be overridden in
   --tf-display-window-controls: none; /* If the window controls should be shown (won't work with sidebery and hidden horizontal tabs), none = hidden, flex = shown */ 
   --tf-display-nav-buttons: none; /* If the navigation buttons (back, forward) should be shown, none = hidden, flex = shown */
   --tf-display-urlbar-icons: none; /* If the icons inside the url bar should be shown, none = hidden, flex = shown */
-  --tf-display-sidebar-tools: flex; /* If the "Customize sidebar" button on the sidebar should be shown, none = hidden, flex = shown */ 
+  --tf-display-sidebar-tools: flex; /* Sidebar shortcuts: none = hidden, flex = shown */
   --tf-display-titles: flex; /* If titles (tabs, navbar, main etc.) should be shown, none = hidden, flex = shown */
   --tf-newtab-logo: "   __            __  ____          \A   / /____  _  __/ /_/ __/___  _  __\A  / __/ _ \\| |/_/ __/ /_/ __ \\| |/_/\A / /_/  __/>  </ /_/ __/ /_/ />  <  \A \\__/\\___/_/|_|\\__/_/  \\____/_/|_|  ";
   --tf-navbar-margin: calc(8px * var(--tf-density)) calc(8px * var(--tf-density)) calc(2px * var(--tf-density));

@@ -29,5 +29,42 @@
     "label": "Ocultar títulos das áreas",
     "property": "textfox.sine.hideTitles",
     "defaultValue": false
+  },
+  {
+    "type": "dropdown",
+    "label": "Tamanho da fonte da interface",
+    "property": "textfox.sine.fontSize",
+    "defaultValue": "theme",
+    "placeholder": false,
+    "options": [
+      { "label": "Padrão do tema", "value": "theme" },
+      { "label": "Pequena (12 px)", "value": "small" },
+      { "label": "Grande (16 px)", "value": "large" }
+    ]
+  },
+  {
+    "type": "dropdown",
+    "label": "Cantos das molduras",
+    "property": "textfox.sine.rounding",
+    "defaultValue": "theme",
+    "placeholder": false,
+    "options": [
+      { "label": "Padrão do tema", "value": "theme" },
+      { "label": "Retos (0 px)", "value": "square" },
+      { "label": "Levemente arredondados (4 px)", "value": "soft" },
+      { "label": "Arredondados (8 px)", "value": "rounded" }
+    ]
+  },
+  {
+    "type": "checkbox",
+    "label": "Desativar animações e transições do Textfox",
+    "property": "textfox.sine.disableMotion",
+    "defaultValue": false
+  },
+  {
+    "type": "checkbox",
+    "label": "Ocultar os atalhos da barra lateral",
+    "property": "textfox.sine.hideSidebarTools",
+    "defaultValue": false
   }
 ]
