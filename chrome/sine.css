@@ -1,0 +1,37 @@
+/* Sine saves these selections as browser preferences. The defaults are
+   inherited when no preference is set or the user chooses to follow the theme. */
+@media -moz-pref("textfox.sine.density", "compact") {
+  :root {
+    --tf-density: 0.75;
+  }
+}
+
+@media -moz-pref("textfox.sine.density", "standard") {
+  :root {
+    --tf-density: 1;
+  }
+}
+
+@media -moz-pref("textfox.sine.density", "comfortable") {
+  :root {
+    --tf-density: 1.25;
+  }
+}
+
+@media -moz-pref("textfox.sine.border", "thin") {
+  :root {
+    --tf-border-width: 1px;
+  }
+}
+
+@media -moz-pref("textfox.sine.border", "thick") {
+  :root {
+    --tf-border-width: 3px;
+  }
+}
+
+@media -moz-pref("textfox.sine.hideTitles") {
+  :root {
+    --tf-display-titles: none;
+  }
+}

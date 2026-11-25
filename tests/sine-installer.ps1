@@ -49,7 +49,7 @@ function New-InstallerCopy([string]$Name) {
   $checkout = Join-Path $root $Name
   $tools = Join-Path $checkout "tools"
   [IO.Directory]::CreateDirectory($tools) | Out-Null
-  foreach ($item in "theme.json", "user.js", "LICENSE", "chrome") {
+  foreach ($item in "theme.json", "preferences.json", "user.js", "LICENSE", "chrome") {
     Copy-Item -LiteralPath (Join-Path $repo $item) -Destination $checkout -Recurse
   }
   $script = Join-Path $tools "install-sine.ps1"
@@ -79,6 +79,10 @@ $cases = [ordered]@{
     Assert-True ($data.$modId.enabled -and $data.$modId.'no-updates') "O mod local ficou inativo ou com atualizações habilitadas."
     Assert-True (-not $data.original.enabled) "O tema original continuou habilitado."
     Assert-True ($data.outro.enabled -and $data.outro.extra.value -eq 7) "Outro mod foi alterado."
+    Assert-True ($data.$modId.preferences -ceq "preferences.json") "O painel de preferências não foi registrado."
+    $prefsPath = Join-Path $profile.Mod $data.$modId.preferences
+    $prefs = Get-Content -LiteralPath $prefsPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert-True ($prefs.Count -eq 3) "O pacote não oferece os três controles esperados."
     $entrypoint = Join-Path $profile.Mod $data.$modId.style.chrome
     Assert-True (Test-Path -LiteralPath $entrypoint -PathType Leaf) "O CSS registrado não existe."
     $firstBackup = @(Get-Backups $profile)
@@ -266,6 +270,10 @@ $cases = [ordered]@{
     [IO.File]::WriteAllText($entrypoint, "versão anterior")
     $copy = New-InstallerCopy "incomplete-source"
     $checkout = Split-Path -Parent (Split-Path -Parent $copy)
+    $preferences = Join-Path $checkout "preferences.json"
+    Remove-Item -LiteralPath $preferences
+    Assert-Throws { & $copy -ProfilePath $profile.Path } 'preferences.json'
+    Copy-Item -LiteralPath (Join-Path $repo "preferences.json") -Destination $preferences
     Remove-Item -LiteralPath (Join-Path $checkout "chrome/userContent.css")
     Assert-Throws { & $copy -ProfilePath $profile.Path } 'userContent.css'
     [IO.File]::WriteAllText((Join-Path $checkout "theme.json"), '{"version":"2"}')

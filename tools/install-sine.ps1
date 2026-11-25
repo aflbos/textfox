@@ -180,8 +180,9 @@ try {
     if ($theme.id -isnot [string] -or $theme.id -cne $packageId -or
         $theme.name -isnot [string] -or [string]::IsNullOrWhiteSpace($theme.name) -or
         $theme.version -isnot [string] -or [string]::IsNullOrWhiteSpace($theme.version) -or
+        $theme.preferences -cne "preferences.json" -or
         $theme.style.chrome -cne "chrome/userChrome.css" -or $theme.style.content -cne "chrome/userContent.css") {
-      throw "O theme.json precisa declarar o ID do textfox, o nome, a versão e os dois caminhos CSS."
+      throw "O theme.json precisa declarar o ID do textfox, o nome, a versão, os caminhos CSS e preferences.json."
     }
     $entry = [ordered]@{
       style        = [ordered]@{ chrome = $theme.style.chrome; content = $theme.style.content }
@@ -191,7 +192,7 @@ try {
       version      = $theme.version
       description  = $theme.description
       updatedAt    = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-      preferences  = ""
+      preferences  = $theme.preferences
       "no-updates" = $true
       enabled      = $true
     }
@@ -218,7 +219,7 @@ try {
   if (-not $Uninstall) {
     [IO.Directory]::CreateDirectory($staged) | Out-Null
     Copy-Item -LiteralPath (Join-Path $repo "chrome") -Destination (Join-Path $staged "chrome") -Recurse
-    foreach ($name in "theme.json", "user.js", "LICENSE") {
+    foreach ($name in "theme.json", $theme.preferences, "user.js", "LICENSE") {
       Copy-Item -LiteralPath (Join-Path $repo $name) -Destination $staged
     }
     if (-not $existing) {

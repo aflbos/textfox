@@ -49,6 +49,11 @@ _a firefox theme for the tui enthusiast_
 >   O script valida o registro do Sine antes de trocar os arquivos. Ele instala
 >   o mod em `chrome\sine-mods\textfox-waterfox`, desliga as atualizações
 >   automáticas para essa cópia e desabilita o textfox original, se estiver ativo.
+> - No painel do Sine, abra as preferências do mod **textfox (Waterfox)** para
+>   escolher a densidade, a espessura das molduras ou ocultar os títulos das
+>   áreas. As escolhas ficam no perfil do navegador e são mantidas quando o
+>   instalador atualiza o mod. Regras personalizadas em `config.css` têm
+>   precedência sobre essas opções.
 > - Para remover o mod local:
 >
 >   ```powershell

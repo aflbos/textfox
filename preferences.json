@@ -1,0 +1,33 @@
+[
+  {
+    "type": "dropdown",
+    "label": "Densidade da interface",
+    "property": "textfox.sine.density",
+    "defaultValue": "browser",
+    "placeholder": false,
+    "options": [
+      { "label": "Seguir o navegador", "value": "browser" },
+      { "label": "Compacta", "value": "compact" },
+      { "label": "Padrão", "value": "standard" },
+      { "label": "Confortável", "value": "comfortable" }
+    ]
+  },
+  {
+    "type": "dropdown",
+    "label": "Espessura das molduras",
+    "property": "textfox.sine.border",
+    "defaultValue": "theme",
+    "placeholder": false,
+    "options": [
+      { "label": "Padrão do tema", "value": "theme" },
+      { "label": "Fina (1 px)", "value": "thin" },
+      { "label": "Grossa (3 px)", "value": "thick" }
+    ]
+  },
+  {
+    "type": "checkbox",
+    "label": "Ocultar títulos das áreas",
+    "property": "textfox.sine.hideTitles",
+    "defaultValue": false
+  }
+]

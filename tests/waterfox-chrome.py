@@ -319,6 +319,32 @@ return [root.getAttribute("uidensity"), getComputedStyle(root).getPropertyValue(
     print("PASS native Compact, Touch and Normal density settings")
 
 
+def check_sine_preferences(execute):
+    execute("""
+Services.prefs.setIntPref("browser.uidensity", 2);
+Services.prefs.setStringPref("textfox.sine.density", "compact");
+Services.prefs.setStringPref("textfox.sine.border", "thick");
+Services.prefs.setBoolPref("textfox.sine.hideTitles", true);
+""")
+    def read_styles():
+        return execute("""
+const navbar = document.querySelector("#nav-bar");
+return [
+  getComputedStyle(navbar).paddingTop,
+  getComputedStyle(navbar).borderTopWidth,
+  getComputedStyle(navbar, "::before").display,
+];
+""")
+    wait_for(read_styles, lambda styles: styles == ["3px", "3px", "none"], "Sine preferences")
+    execute("""
+Services.prefs.setStringPref("textfox.sine.density", "browser");
+Services.prefs.setStringPref("textfox.sine.border", "theme");
+Services.prefs.setBoolPref("textfox.sine.hideTitles", false);
+""")
+    wait_for(read_styles, lambda styles: styles == ["5px", "2px", "flex"], "Sine defaults")
+    print("PASS Sine appearance preferences override and restore theme defaults")
+
+
 def main():
     browser = browser_argument(__doc__)
     tab_height = "return gBrowser.selectedTab.getBoundingClientRect().height;"
@@ -333,6 +359,7 @@ def main():
         execute("document.documentElement.style.removeProperty('--tf-display-horizontal-tabs');")
         check_waterfox_appearance(execute, "horizontal")
         check_native_density(execute)
+        check_sine_preferences(execute)
     with gecko_profile(browser, preferences=PREFERENCES, theme_dir=ROOT) as (_, _, execute):
         info = execute("return [Services.appinfo.name, Services.appinfo.version];")
         if info[0].lower() != "waterfox":

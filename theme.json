@@ -4,6 +4,7 @@
   "description": "textfox adaptado para o Waterfox: barra de status, abas em árvore e configuração pessoal",
   "version": "1.0.0-waterfox.1",
   "homepage": "",
+  "preferences": "preferences.json",
   "style": {
     "chrome": "chrome/userChrome.css",
     "content": "chrome/userContent.css"

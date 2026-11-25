@@ -18,6 +18,7 @@
 
 /* configurations - DO NOT CHANGE ORDER */
 @import url("defaults.css");
+@import url("sine.css");
 @import url("config.css");
 
 * {
