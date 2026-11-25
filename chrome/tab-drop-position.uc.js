@@ -27,14 +27,19 @@
   const updateTabStyles = dragAndDrop?._updateTabStylesOnDrag;
   const treeDnD = window.TreeTabsDnD;
   const nativeAttachTarget = treeDnD?.getAttachTarget;
+  const nativePlacementBetween = treeDnD?._placementBetween;
   const centeredDrags = new WeakSet();
+  const rootPlacements = new WeakSet();
+
+  function isLocalMove(container, event, dragged) {
+    return container === tabs && dragged?.container === tabs && !dragged.multiselected &&
+      !dragged._dragData?.fromTabList && dragAndDrop?.getDropEffectForTabDrag(event) === "move";
+  }
 
   function getAttachTarget(container, event, dragged, ...args) {
     const target = nativeAttachTarget.call(this, container, event, dragged, ...args);
-    if (!target || container !== tabs || dragged.container !== tabs ||
-        dragged._dragData?.fromTabList || dragAndDrop?.getDropEffectForTabDrag(event) !== "move") {
-      return target;
-    }
+    if (!target || !isLocalMove(container, event, dragged)) return target;
+    if (!event.shiftKey) return null;
 
     // Use the same unanimated bounds as Waterfox for dragover and drop.
     const row = this._getRowBounds(target);
@@ -44,8 +49,25 @@
       : null;
   }
 
+  function placementBetween(service, previous, next, dragged, event, movingSet) {
+    const placement = nativePlacementBetween.call(this, service, previous, next, dragged, event, movingSet);
+    if (!placement?.parent || !event || !isLocalMove(tabs, event, dragged) ||
+        placement.parent === service.getParent(this._getLogicalTab(dragged))) {
+      return placement;
+    }
+
+    // An insertion line inside another subtree must not change the parent.
+    const root = service.getAncestors(previous).at(-1) ?? previous;
+    const replacement = { parent: null, insertAfter: root };
+    rootPlacements.add(replacement);
+    return replacement;
+  }
+
   if (typeof nativeAttachTarget === "function" && typeof treeDnD._getRowBounds === "function") {
     treeDnD.getAttachTarget = getAttachTarget;
+  }
+  if (typeof nativePlacementBetween === "function") {
+    treeDnD._placementBetween = placementBetween;
   }
 
   function centerDraggedTab(dragged, dropEffect) {
@@ -106,10 +128,10 @@
     };
   }
 
-  function showPosition(dragged) {
+  function showPosition(dragged, afterBranch) {
     const data = dragged._dragData;
-    const target = data?.dropElement;
-    if (!target?.isConnected || typeof data.dropBefore !== "boolean") {
+    const target = afterBranch ?? data?.dropElement;
+    if (!target?.isConnected || (!afterBranch && typeof data.dropBefore !== "boolean")) {
       return false;
     }
 
@@ -126,7 +148,7 @@
       ? tabs.pinnedTabsContainer?.getBoundingClientRect()
       : tabs.arrowScrollbox?.scrollClientRect) ?? tabs.getBoundingClientRect();
     const destination = slot?.rect ?? item;
-    const before = Boolean(slot) || data.dropBefore;
+    const before = !afterBranch && (Boolean(slot) || data.dropBefore);
     const drawBefore = vertical ? before : before !== rtl;
     const targetEdge = vertical
       ? (drawBefore ? destination.top : destination.bottom)
@@ -149,15 +171,15 @@
     return true;
   }
 
-  function followPosition(dragged) {
+  function followPosition(dragged, afterBranch) {
     if (!tabs.hasAttribute("movingtab")) {
       hide();
       return;
     }
-    const visible = showPosition(dragged);
+    const visible = showPosition(dragged, afterBranch);
     indicator.hidden = !visible;
     tabs.toggleAttribute("textfox-drop-between", visible);
-    update = window.requestAnimationFrame(() => followPosition(dragged));
+    update = window.requestAnimationFrame(() => followPosition(dragged, afterBranch));
   }
 
   tabs.addEventListener("dragover", event => {
@@ -170,11 +192,20 @@
         !tabs.tabDragAndDrop?._tabDropIndicator?.hidden || dragged._dragData?.fromTabList) {
       return;
     }
-    // Waterfox already highlights the parent for a drop that creates a child.
-    if (treeDnD?.getAttachTarget?.(tabs, event, dragged)) {
-      return;
+    let afterBranch;
+    if (treeDnD?._isEnabled?.(tabs) && !dragged.pinned && isLocalMove(tabs, event, dragged)) {
+      // Waterfox already highlights the parent for an explicit attachment.
+      if (treeDnD.getAttachTarget(tabs, event, dragged)) return;
+      const placement = treeDnD._previewDropPlacement?.(event, dragged);
+      if (rootPlacements.has(placement)) {
+        const service = window.gBrowser.TreeTabsService;
+        const moving = treeDnD._getMovingSet(treeDnD._getLogicalTab(dragged));
+        afterBranch = service.getDescendants(placement.insertAfter).findLast(
+          tab => treeDnD._isPlacementCandidate(tab, moving)
+        ) ?? placement.insertAfter;
+      }
     }
-    update = window.requestAnimationFrame(() => followPosition(dragged));
+    update = window.requestAnimationFrame(() => followPosition(dragged, afterBranch));
   }, { signal });
 
   tabs.addEventListener("dragleave", event => {
@@ -194,6 +225,9 @@
     }
     if (treeDnD?.getAttachTarget === getAttachTarget) {
       treeDnD.getAttachTarget = nativeAttachTarget;
+    }
+    if (treeDnD?._placementBetween === placementBetween) {
+      treeDnD._placementBetween = nativePlacementBetween;
     }
   });
 })();

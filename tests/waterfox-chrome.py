@@ -922,12 +922,12 @@ const first = gBrowser.selectedTab;
 const second = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
 const third = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
 const transfer = new DataTransfer();
-const eventAt = (type, tab, offset) => {
+const eventAt = (type, tab, offset, shiftKey = false) => {
   const r = tab.getBoundingClientRect();
   const x = Math.round(r.left + r.width * offset);
   const y = Math.round(r.top + r.height * offset);
   return new DragEvent(type, {
-    bubbles: true, cancelable: true, dataTransfer: transfer, clientX: x, clientY: y,
+    bubbles: true, cancelable: true, dataTransfer: transfer, clientX: x, clientY: y, shiftKey,
     screenX: window.mozInnerScreenX + x, screenY: window.mozInnerScreenY + y,
   });
 };
@@ -993,22 +993,23 @@ const transfer = eventAt("dragover", third, 0.5).dataTransfer;
 const tree = window.TreeTabsDnD;
 const row = tree._getRowBounds(third);
 const x = Math.round(third.getBoundingClientRect().left + 10);
-return [0.28, 0.5, 0.72].map(fraction => {
+return [[0.28, true], [0.5, false], [0.5, true], [0.72, true]].map(([fraction, shiftKey]) => {
   const y = row.top + row.height * fraction;
   const event = new DragEvent("dragover", {
-    bubbles: true, cancelable: true, dataTransfer: transfer, clientX: x, clientY: y,
+    bubbles: true, cancelable: true, dataTransfer: transfer, clientX: x, clientY: y, shiftKey,
     screenX: window.mozInnerScreenX + x, screenY: window.mozInnerScreenY + y,
   });
   return tree.getAttachTarget(gBrowser.tabContainer, event, first) === third;
 });
-""") == [False, True, False], "Only the middle third should attach a tab"
+""") == [False, False, True, False], "Attachment requires Shift over the middle third"
         execute("""
 const drag = window.textfoxTestDrag;
-const event = drag.eventAt("dragover", drag.third, 0.5);
+const event = drag.eventAt("dragover", drag.third, 0.5, true);
 drag.third.dispatchEvent(event);
 drag.childTarget = gBrowser.tabContainer.querySelector('[data-tree-drop-target="child"]');
 drag.childDrop = new DragEvent("drop", {
   bubbles: true, cancelable: true, dataTransfer: event.dataTransfer,
+  shiftKey: event.shiftKey,
   clientX: event.clientX, clientY: event.clientY, screenX: event.screenX, screenY: event.screenY,
 });
 """)
@@ -1046,6 +1047,64 @@ delete window.textfoxTestDrag;
 """)
     assert execute('return document.getElementById("textfox-tab-drop-position").hidden;')
     print(f"PASS {orientation} drag stays centered, highlights the native drop edge and clears on drop")
+
+
+def check_tree_reorder_keeps_root(execute):
+    execute("""
+const [source, root, child, last, next] = Array.from({ length: 5 }, () =>
+  gBrowser.addTrustedTab("about:blank", { skipAnimation: true })
+);
+gBrowser.TreeTabsService.attachTab(child, root);
+gBrowser.TreeTabsService.attachTab(last, root);
+const transfer = new DataTransfer();
+const boxes = [source, root, child].map(tab => tab.getBoundingClientRect());
+const eventAt = (type, index, yOffset, xOffset) => {
+  const box = boxes[index];
+  const x = Math.round(box.left + box.width * xOffset);
+  const y = Math.round(box.top + box.height * yOffset);
+  return new DragEvent(type, {
+    bubbles: true, cancelable: true, dataTransfer: transfer, clientX: x, clientY: y,
+    screenX: window.mozInnerScreenX + x, screenY: window.mozInnerScreenY + y,
+  });
+};
+window.textfoxTestTree = { source, root, child, last, next, eventAt };
+source.dispatchEvent(eventAt("dragstart", 0, 0.5, 0.3));
+transfer.dropEffect = "move";
+root.dispatchEvent(eventAt("dragover", 1, 0.5, 0.75));
+child.dispatchEvent(eventAt("dragover", 2, 0.54, 0.75));
+""")
+    try:
+        wait_for(
+            lambda: execute("""
+const { last } = window.textfoxTestTree;
+const line = document.getElementById("textfox-tab-drop-position");
+return !line.hidden &&
+  Math.abs(line.getBoundingClientRect().top + 1.5 - last.getBoundingClientRect().bottom) < 1;
+"""),
+            bool, "root insertion marker after the entire branch",
+        )
+        execute("""
+const { child, eventAt } = window.textfoxTestTree;
+child.dispatchEvent(eventAt("drop", 2, 0.54, 0.75));
+""")
+        wait_for(
+            lambda: execute("""
+const { source, root, child, last, next } = window.textfoxTestTree;
+const service = gBrowser.TreeTabsService;
+return !service.getParent(source) && service.getParent(child) === root
+  && service.getParent(last) === root && source._tPos === last._tPos + 1
+  && next._tPos === source._tPos + 1;
+"""),
+            bool, "regular drag stays at root and lands at the indicated gap",
+        )
+    finally:
+        execute("""
+gBrowser.tabContainer.tabDragAndDrop.finishAnimateTabMove();
+const { source, root, child, last, next } = window.textfoxTestTree;
+for (const tab of [source, child, last, root, next]) gBrowser.removeTab(tab, { animate: false });
+delete window.textfoxTestTree;
+""")
+    print("PASS unmodified tree drag reorders after a foreign subtree without nesting")
 
 
 def check_pinned_row_drop(execute):
@@ -1173,6 +1232,7 @@ def main():
         check_waterfox_appearance(execute, "vertical")
         check_frame_spacing(execute)
         check_tab_drop_position(execute, "vertical")
+        check_tree_reorder_keeps_root(execute)
         check_compact_frame_titles(execute, vertical=True)
         check_expanded_pinned_grid(execute)
         check_pinned_favicon_cache(execute)
