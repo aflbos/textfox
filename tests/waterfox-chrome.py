@@ -300,6 +300,39 @@ return pins.map(tab => {
             lambda pins: len(pins) == 6 and all(pin["nativeGrid"] for pin in pins),
             "expanded native pinned grid",
         )
+        painted_widths = execute("""
+return (async () => {
+  const icons = [...gBrowser.tabContainer.querySelectorAll("[textfox-test-pin] .tab-icon-image")];
+  const canvas = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
+  const ctx = canvas.getContext("2d");
+  const color = "rgb(247, 3, 223)";
+  const widths = [];
+  for (const [index, size] of [16, 64, 16].entries()) {
+    const icon = icons[index];
+    canvas.width = canvas.height = size;
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, size, size);
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">'
+      + '<rect width="16" height="16" fill="' + color + '"/></svg>';
+    icon.src = index === 2 ? "data:image/svg+xml," + encodeURIComponent(svg) : canvas.toDataURL();
+    await icon.decode();
+    const box = icon.getBoundingClientRect();
+    canvas.width = Math.ceil(box.width) + 2;
+    canvas.height = 1;
+    ctx.drawWindow(window, Math.floor(box.left), Math.floor(box.top + box.height / 2),
+                   canvas.width, 1, "transparent", 1);
+    const pixels = ctx.getImageData(0, 0, canvas.width, 1).data;
+    let painted = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      if (pixels[i] === 247 && pixels[i + 1] === 3 && pixels[i + 2] === 223) painted++;
+    }
+    widths.push(painted);
+  }
+  return widths;
+})();
+""")
+        assert all(abs(actual - expected) <= 1 for actual, expected in
+                   zip(painted_widths, (16, 28, 28), strict=True)), painted_widths
         for density in (0, 1, 2):
             execute('Services.prefs.setIntPref("browser.uidensity", arguments[0]);', density)
             pins = execute(read)

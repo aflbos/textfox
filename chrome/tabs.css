@@ -106,6 +106,12 @@ box#vertical-tabs {
       .tab-icon-image {
         width: 28px !important;
         height: 28px !important;
+        object-fit: scale-down;
+
+        /* The default favicon and SVG sources can scale without raster blur. */
+        &:is(:not([src]), [src$=".svg" i], [src^="data:image/svg+xml" i]) {
+          object-fit: contain;
+        }
       }
     }
   }
