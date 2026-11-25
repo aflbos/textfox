@@ -25,7 +25,6 @@
   }
   &::before {
     --textfox-title-padding: calc(4px * var(--tf-density));
-    --textfox-title-gap: calc(6px * var(--tf-density));
     display: var(--tf-display-titles);
     content: "status";
     background-color: var(--tf-statusbar-background);

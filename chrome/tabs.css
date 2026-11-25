@@ -1,5 +1,5 @@
 box#vertical-tabs {
-  margin: calc(8px * var(--tf-density)) !important;
+  margin: var(--textfox-frame-gap) !important;
   border: var(--border-width) solid var(--tf-border);
   border-radius: var(--tf-rounding);
   padding: calc(8px * var(--tf-density)) 0 !important;
@@ -29,7 +29,7 @@ box#vertical-tabs {
 
 #TabsToolbar {
   display: var(--tf-display-horizontal-tabs);
-  margin: calc(8px * var(--tf-density)) calc(8px * var(--tf-density)) calc(2px * var(--tf-density));
+  margin: var(--textfox-frame-gap) var(--textfox-frame-gap) calc(2px * var(--tf-density));
   border-top: var(--border-width) !important;
   border-style: solid !important;
   border-width: var(--border-width);

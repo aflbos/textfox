@@ -173,7 +173,7 @@ in
       navbar = {
         margin = mkOption {
           type = str;
-          default = "calc(8px * var(--tf-density)) calc(8px * var(--tf-density)) calc(8px * var(--tf-density) + var(--textfox-navbar-gap-adjustment, 0px))";
+          default = "var(--textfox-frame-gap) var(--textfox-frame-gap) calc(var(--textfox-frame-gap) + var(--textfox-navbar-gap-adjustment, 0px))";
           description = "Navbar margin";
         };
         padding = mkOption {
@@ -192,7 +192,7 @@ in
       statusbar = {
         margin = mkOption {
           type = str;
-          default = "calc(6px * var(--tf-density)) calc(8px * var(--tf-density)) calc(8px * var(--tf-density))";
+          default = "max(calc(6px * var(--tf-density)), var(--textfox-title-clearance)) calc(8px * var(--tf-density)) calc(8px * var(--tf-density))";
           description = "Margin of the Waterfox status bar";
         };
         padding = mkOption {

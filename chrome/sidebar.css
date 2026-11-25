@@ -21,7 +21,7 @@
 }
 #sidebar-box {
   font-size: unset !important;
-  margin: calc(8px * var(--tf-density));
+  margin: var(--textfox-frame-gap);
   padding: calc(8px * var(--tf-density)) !important;
   border: var(--border-width) solid var(--tf-border);
   border-radius: var(--tf-rounding) !important;
@@ -49,7 +49,7 @@
 
 .buttons-wrapper {
   display: var(--tf-display-sidebar-tools) !important;
-  margin: calc(8px * var(--tf-density));
+  margin: var(--textfox-frame-gap);
   border: var(--border-width) solid var(--tf-border);
   border-radius: var(--tf-rounding) !important;
   transition: border-color var(--tf-border-transition);

@@ -55,7 +55,7 @@
   }
 }
 #PersonalToolbar {
-  margin: calc(8px * var(--tf-density)) calc(8px * var(--tf-density)) calc(2px * var(--tf-density));
+  margin: var(--textfox-frame-gap) var(--textfox-frame-gap) calc(2px * var(--tf-density));
   padding: calc(4px * var(--tf-density)) !important;
   border-top: var(--border-width) !important;
   border-style: solid !important;

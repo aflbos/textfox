@@ -23,15 +23,18 @@
   --tf-display-sidebar-tools: flex; /* Sidebar shortcuts: none = hidden, flex = shown. */
   --tf-display-titles: flex; /* If titles (tabs, navbar, main etc.) should be shown, none = hidden, flex = shown */
   --tf-newtab-logo: "   __            __  ____          \A   / /____  _  __/ /_/ __/___  _  __\A  / __/ _ \\| |/_/ __/ /_/ __ \\| |/_/\A / /_/  __/>  </ /_/ __/ /_/ />  <  \A \\__/\\___/_/|_|\\__/_/  \\____/_/|_|  ";
+  /* Reserve the part of the centered title that sits above the frame. */
+  --textfox-title-clearance: calc((var(--tf-font-size) - var(--tf-border-width)) / 2);
+  --textfox-frame-gap: max(calc(8px * var(--tf-density)), var(--textfox-title-clearance));
   --tf-navbar-margin:
-    calc(8px * var(--tf-density))
-    calc(8px * var(--tf-density))
-    calc(8px * var(--tf-density) + var(--textfox-navbar-gap-adjustment, 0px));
+    var(--textfox-frame-gap)
+    var(--textfox-frame-gap)
+    calc(var(--textfox-frame-gap) + var(--textfox-navbar-gap-adjustment, 0px));
   --tf-navbar-padding: calc(4px * var(--tf-density));
   --tf-bookmarks-alignment: center; /* alignment of bookmarks in the bookmarks toolbar (if you have many bookmarks, left is recommended) */
 
   /* Waterfox */
-  --tf-statusbar-margin: calc(6px * var(--tf-density)) calc(8px * var(--tf-density)) calc(8px * var(--tf-density));
+  --tf-statusbar-margin: max(calc(6px * var(--tf-density)), var(--textfox-title-clearance)) calc(8px * var(--tf-density)) calc(8px * var(--tf-density));
   --tf-statusbar-padding: calc(4px * var(--tf-density));
   --tf-animation-duration: 150ms; /* duration of tab, urlbar, status and menu animations */
 }

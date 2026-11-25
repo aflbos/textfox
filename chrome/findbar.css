@@ -17,7 +17,6 @@ findbar {
 
   &::before {
     --textfox-title-padding: 8px;
-    --textfox-title-gap: 1rem;
     display: var(--tf-display-titles);
     content: "find";
     background-color: var(--tf-bg);

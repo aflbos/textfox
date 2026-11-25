@@ -6,8 +6,8 @@ browser {
   border-radius: var(--tf-rounding);
 }
 
-/* The static position starts inside the frame. Back out its padding and
-   border, then raise the label by no more than the gap above the frame. */
+/* The static position starts inside the frame. Back out its padding, half
+   its top border and half the label's line box to put both centers together. */
 :where(
   #nav-bar,
   #PersonalToolbar,
@@ -23,16 +23,17 @@ browser {
   margin-block-start: calc(
     -1 * (
       var(--textfox-title-padding, calc(8px * var(--tf-density))) +
-      var(--border-width) +
-      min(0.5lh, var(--textfox-title-gap, calc(8px * var(--tf-density))))
+      var(--border-width) / 2 +
+      0.5lh
     )
   );
+  line-height: 1;
   pointer-events: none;
 }
 
 #tabbrowser-tabbox,
 .split-view-panel {
-  margin: calc(8px * var(--tf-density)) !important;
+  margin: var(--textfox-frame-gap) !important;
   border: var(--border-width) solid var(--tf-border);
   border-radius: var(--tf-rounding);
   padding: calc(8px * var(--tf-density)) !important;
@@ -85,7 +86,7 @@ browser {
 .split-view-panel {
   --splitborder: var(--tf-border);
   border-color: var(--splitborder);
-  margin: 4px 0 0 !important;
+  margin: max(4px, var(--textfox-title-clearance)) 0 0 !important;
   transition: border-color var(--tf-border-transition), outline-color var(--tf-border-transition);
   overflow: visible !important;
   outline: none;
@@ -93,7 +94,6 @@ browser {
     --splitborder: var(--tf-accent) !important;
   }
   &::before {
-    --textfox-title-gap: 4px;
     z-index: 2;
     content: "split" !important;
     color: var(--lwt-text-color);

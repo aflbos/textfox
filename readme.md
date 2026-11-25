@@ -390,9 +390,9 @@ The theme ships with a `defaults.css`. Its values can be overridden in
   --tf-display-titles: flex; /* If titles (tabs, navbar, main etc.) should be shown, none = hidden, flex = shown */
   --tf-newtab-logo: "   __            __  ____          \A   / /____  _  __/ /_/ __/___  _  __\A  / __/ _ \\| |/_/ __/ /_/ __ \\| |/_/\A / /_/  __/>  </ /_/ __/ /_/ />  <  \A \\__/\\___/_/|_|\\__/_/  \\____/_/|_|  ";
   --tf-navbar-margin:
-    calc(8px * var(--tf-density))
-    calc(8px * var(--tf-density))
-    calc(8px * var(--tf-density) + var(--textfox-navbar-gap-adjustment, 0px));
+    var(--textfox-frame-gap)
+    var(--textfox-frame-gap)
+    calc(var(--textfox-frame-gap) + var(--textfox-navbar-gap-adjustment, 0px));
   --tf-navbar-padding: calc(4px * var(--tf-density));
   --tf-bookmarks-alignment: center; /* alignment of bookmarks in the bookmarks toolbar (if you have many bookmarks, left is recommended) */
 }

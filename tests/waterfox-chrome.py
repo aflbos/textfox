@@ -160,7 +160,7 @@ def check_sidebar(execute):
     )
     assert collapsed["observedShrink"] == "0", collapsed
     assert collapsed["background"] == expanded["background"], collapsed
-    assert collapsed["titleTop"] == "-10px", collapsed
+    assert collapsed["titleTop"] == "-8px", collapsed
     print("PASS sidebar layout and tree-tab control")
 
 
@@ -236,28 +236,31 @@ const { WaterfoxBrowserStyle } = ChromeUtils.importESModule("resource:///modules
 WaterfoxBrowserStyle.setStyle(arguments[0]);
 """, style)
         for density in (0.75, 1, 1.25):
-            top, side, title_top, title_bottom, sidebar_top, tabs_top = execute("""
+            top, side, title_top, title_center, sidebar_top, border_center = execute("""
 document.documentElement.style.setProperty("--tf-density", arguments[0]);
 const rect = id => document.getElementById(id).getBoundingClientRect();
 const navbar = rect("nav-bar");
 const main = rect("tabbrowser-tabbox");
 const tabs = rect("vertical-tabs");
-const title = getComputedStyle(document.getElementById("vertical-tabs"), "::before");
-const titleTop = rect("browser").top + parseFloat(title.top) + parseFloat(title.marginTop);
+const tabFrame = document.getElementById("vertical-tabs");
+const title = getComputedStyle(tabFrame, "::before");
+const border = parseFloat(getComputedStyle(tabFrame).borderTopWidth);
+const anchor = tabFrame.offsetParent;
+const titleTop = anchor.getBoundingClientRect().top + anchor.clientTop
+  + parseFloat(title.top) + parseFloat(title.marginTop);
 const sidebarTop = rect("sidebar-container").top;
 return [
   main.top - navbar.bottom,
   Math.max(main.left - tabs.right, tabs.left - main.right),
   titleTop,
-  titleTop + parseFloat(title.height),
+  titleTop + parseFloat(title.height) / 2,
   sidebarTop,
-  tabs.top,
+  tabs.top + border / 2,
 ];
 """, density)
             assert side > 0 and abs(top - side) < 0.1, (style, density, top, side)
-            assert sidebar_top - 0.1 <= title_top <= tabs_top < title_bottom, (
-                style, density, sidebar_top, title_top, tabs_top, title_bottom,
-            )
+            assert sidebar_top - 0.1 <= title_top, (style, density, sidebar_top, title_top)
+            assert abs(title_center - border_center) < 0.1, (style, density, title_center, border_center)
     execute("document.documentElement.style.removeProperty('--tf-density');")
     print("PASS equal frame gaps and unclipped vertical tab titles in all styles and densities")
 
@@ -291,12 +294,17 @@ return frames.map(frame => {
   const anchor = style.position === "static" ? frame.offsetParent : frame;
   const origin = anchor.getBoundingClientRect().top + anchor.clientTop;
   const top = origin + parseFloat(title.top) + parseFloat(title.marginTop);
-  return [title.content, top, top + parseFloat(title.height), box.top];
+  return [title.content, top, top + parseFloat(title.height) / 2, box.top + parseFloat(style.borderTopWidth) / 2];
 });
 """
-    frames = wait_for(lambda: execute(read, vertical), bool, "compact frames")
-    for title, top, bottom, frame_top in frames:
-        assert -0.1 <= top <= frame_top < bottom, (title, top, bottom, frame_top)
+    for font_size, border_width in (("14px", "2px"), ("16px", "1px")):
+        execute("""
+document.documentElement.style.setProperty("--tf-font-size", arguments[0]);
+document.documentElement.style.setProperty("--tf-border-width", arguments[1]);
+""", font_size, border_width)
+        frames = wait_for(lambda: execute(read, vertical), bool, "compact frames")
+        for title, top, center, border_center in frames:
+            assert top >= -0.1 and abs(center - border_center) <= 1, (title, top, center, border_center)
 
     if vertical:
         execute("""
@@ -309,17 +317,19 @@ gBrowser.selectedTab = secondary;
             lambda: execute("""
 const panel = document.querySelector(".split-view-panel.deck-selected");
 if (!panel) return null;
+const title = getComputedStyle(panel, "::before");
 return [
-  getComputedStyle(panel, "::before").content,
-  Number(getComputedStyle(panel, "::before").zIndex),
+  title.content,
+  Number(title.zIndex),
   Number(getComputedStyle(panel.querySelector(".browserContainer")).zIndex),
+  panel.clientTop / 2 + parseFloat(title.top) + parseFloat(title.marginTop) + parseFloat(title.height) / 2,
 ];
 """),
             bool,
             "active split frame",
         )
-        assert split[0] == '"active split"' and split[1] > split[2], split
-    print(f"PASS compact frame titles remain readable ({'vertical' if vertical else 'horizontal'})")
+        assert split[0] == '"active split"' and split[1] > split[2] and abs(split[3]) <= 1, split
+    print(f"PASS compact frame titles are centered on the borders ({'vertical' if vertical else 'horizontal'})")
 
 
 def check_status_and_motion(execute):
