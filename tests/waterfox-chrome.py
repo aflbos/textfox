@@ -795,6 +795,20 @@ return {
     )
     assert result["axis"] == orientation and result["thickness"] == 3, result
     assert abs(result["edge"] - result["expected"]) < 1, result
+    wait_for(lambda: execute("""
+const indicator = document.getElementById("textfox-tab-drop-position");
+if (indicator.style.maskImage.includes("transparent")) return true;
+const frame = window.textfoxTestDrag.first.querySelector(".tab-background");
+frame.style.removeProperty("translate");
+const line = indicator.getBoundingClientRect();
+const box = frame.getBoundingClientRect();
+const vertical = indicator.dataset.axis === "vertical";
+const delta = vertical ? line.top + line.height / 2 - box.top - box.height / 2
+  : line.left + line.width / 2 - box.left - box.width / 2;
+frame.style.translate = vertical ? `0 ${delta}px` : `${delta}px 0`;
+return false;
+"""), bool, f"{orientation} drop indicator behind the dragged tab")
+    execute('window.textfoxTestDrag.first.querySelector(".tab-background").style.removeProperty("translate");')
     if orientation == "vertical":
         execute("""
 const drag = window.textfoxTestDrag;

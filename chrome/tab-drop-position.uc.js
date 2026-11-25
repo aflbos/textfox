@@ -45,6 +45,25 @@
     dragAndDrop._updateTabStylesOnDrag = centerDraggedTab;
   }
 
+  function maskBehindDraggedTab(dragged, vertical, edge, start, end) {
+    const frame = dragged.querySelector(":scope > .tab-stack > .tab-background") ?? dragged;
+    const bounds = frame.getBoundingClientRect();
+    const nearEdge = vertical ? bounds.top : bounds.left;
+    const farEdge = vertical ? bounds.bottom : bounds.right;
+    const coverStart = Math.max(start, vertical ? bounds.left : bounds.top);
+    const coverEnd = Math.min(end, vertical ? bounds.right : bounds.bottom);
+    if (edge + 1.5 <= nearEdge || edge - 1.5 >= farEdge || coverEnd <= coverStart) {
+      return "none";
+    }
+
+    // The native tab may be in a different stacking context. Cut the line
+    // out behind its painted frame so it remains visible in the gutters.
+    const from = `${coverStart - start}px`;
+    const to = `${coverEnd - start}px`;
+    const direction = vertical ? "to right" : "to bottom";
+    return `linear-gradient(${direction}, currentColor ${from}, transparent ${from} ${to}, currentColor ${to})`;
+  }
+
   function showPosition(dragged) {
     const data = dragged._dragData;
     const target = data?.dropElement;
@@ -79,6 +98,7 @@
     indicator.style.left = `${vertical ? start : edge}px`;
     indicator.style.top = `${vertical ? edge : start}px`;
     indicator.style.setProperty("--textfox-drop-span", `${end - start}px`);
+    indicator.style.maskImage = maskBehindDraggedTab(dragged, vertical, edge, start, end);
     return true;
   }
 
