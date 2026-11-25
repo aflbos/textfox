@@ -312,6 +312,10 @@ return (async () => {
     canvas.width = canvas.height = size;
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, size, size);
+    if (index === 0) {
+      ctx.fillStyle = "rgb(13, 241, 29)";
+      for (let x = 0; x < size; x += 2) ctx.fillRect(x, 0, 1, size);
+    }
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">'
       + '<rect width="16" height="16" fill="' + color + '"/></svg>';
     icon.src = index === 2 ? "data:image/svg+xml," + encodeURIComponent(svg) : canvas.toDataURL();
@@ -324,15 +328,17 @@ return (async () => {
     const pixels = ctx.getImageData(0, 0, canvas.width, 1).data;
     let painted = 0;
     for (let i = 0; i < pixels.length; i += 4) {
-      if (pixels[i] === 247 && pixels[i + 1] === 3 && pixels[i + 2] === 223) painted++;
+      const magenta = pixels[i] === 247 && pixels[i + 1] === 3 && pixels[i + 2] === 223;
+      const green = pixels[i] === 13 && pixels[i + 1] === 241 && pixels[i + 2] === 29;
+      if (magenta || green) painted++;
     }
     widths.push(painted);
   }
   return widths;
 })();
 """)
-        assert all(abs(actual - expected) <= 1 for actual, expected in
-                   zip(painted_widths, (16, 28, 28), strict=True)), painted_widths
+        # The alternating PNG stripes must retain their original colors when enlarged.
+        assert all(abs(width - 32) <= 1 for width in painted_widths), painted_widths
         for density in (0, 1, 2):
             execute('Services.prefs.setIntPref("browser.uidensity", arguments[0]);', density)
             pins = execute(read)
@@ -341,7 +347,7 @@ return (async () => {
             assert all(
                 pin["nativeGrid"] and pin["width"] >= 48
                 and abs(pin["width"] - pin["height"]) < 0.1
-                and pin["icon"] == [28, 28]
+                and pin["icon"] == [32, 32]
                 and all(abs(offset) < 1 for offset in pin["center"])
                 for pin in pins
             ), (density, pins)
