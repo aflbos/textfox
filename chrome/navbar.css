@@ -38,11 +38,12 @@
     border-color: var(--tf-accent) !important;
   }
   &::before {
+    --textfox-title-padding: calc(4px * var(--tf-density));
     display: var(--tf-display-titles);
     content: "navbar";
     background-color: var(--tf-bg);
     position: absolute;
-    margin: -16px 8px;
+    margin-inline: 8px;
     padding: 0 2px;
   }
   &:hover::before {
@@ -67,11 +68,12 @@
     border-color: var(--tf-accent) !important;
   }
   &::before {
+    --textfox-title-padding: calc(4px * var(--tf-density));
     display: var(--tf-display-titles);
     content: "bookmarks";
     background-color: var(--tf-bg);
     position: absolute;
-    margin: -1.25rem 0.4rem;
+    margin-inline: .4rem;
     padding: 0 2px;
   }
   &:hover::before {
@@ -102,8 +104,8 @@ toolbarbutton.bookmark-item:not(.subviewbutton) {
 
 @media (-moz-bool-pref: "sidebar.revamp") {
   #nav-bar::before {
-    margin: -1.35rem 0.75rem;
-    left: 0;
+    margin-inline: .75rem;
+    inset-inline-start: 0;
   }
 
   .titlebar-spacer[type="pre-tabs"],

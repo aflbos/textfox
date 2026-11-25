@@ -6,6 +6,30 @@ browser {
   border-radius: var(--tf-rounding);
 }
 
+/* The static position starts inside the frame. Back out its padding and
+   border, then raise the label by no more than the gap above the frame. */
+:where(
+  #nav-bar,
+  #PersonalToolbar,
+  #TabsToolbar,
+  box#vertical-tabs,
+  #tabbrowser-tabbox,
+  .split-view-panel,
+  #sidebar-box,
+  .buttons-wrapper,
+  #status-bar,
+  findbar
+)::before {
+  margin-block-start: calc(
+    -1 * (
+      var(--textfox-title-padding, calc(8px * var(--tf-density))) +
+      var(--border-width) +
+      min(0.5lh, var(--textfox-title-gap, calc(8px * var(--tf-density))))
+    )
+  );
+  pointer-events: none;
+}
+
 #tabbrowser-tabbox,
 .split-view-panel {
   margin: calc(8px * var(--tf-density)) !important;
@@ -20,14 +44,16 @@ browser {
     }
   }
   &::before {
-    z-index: 1;
     display: var(--tf-display-titles);
     content: "main";
     background-color: var(--tf-bg);
     position: absolute;
-    margin: -1.75rem 0rem;
     padding: 0 4px;
   }
+}
+
+#tabbrowser-tabbox::before {
+  z-index: 1;
 }
 
 :root[inFullscreen="true"] {
@@ -67,6 +93,8 @@ browser {
     --splitborder: var(--tf-accent) !important;
   }
   &::before {
+    --textfox-title-gap: 4px;
+    z-index: 2;
     content: "split" !important;
     color: var(--lwt-text-color);
   }

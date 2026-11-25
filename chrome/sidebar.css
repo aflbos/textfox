@@ -39,7 +39,6 @@
     color: var(--tf-sidebar-text);
     background-color: var(--tf-sidebar-background);
     position: absolute;
-    margin: -1.75rem 0rem;
     padding: 0 4px;
   }
 }
@@ -58,12 +57,14 @@
     border-color: var(--tf-accent) !important;
   }
   &::before {
+    --textfox-title-padding: 0px;
+    align-self: start;
     display: var(--tf-display-titles);
     position: absolute;
     content: "tools";
     color: var(--tf-sidebar-text);
     background-color: var(--tf-sidebar-background);
-    margin: 3.25rem .4rem;
+    margin-inline: .4rem;
     padding: 0 4px;
   }
 }

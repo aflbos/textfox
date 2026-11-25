@@ -14,13 +14,7 @@ box#vertical-tabs {
     content: "tabs";
     background-color: var(--tf-bg);
     position: absolute;
-    /* Offset the frame padding and border, then raise the label by at most
-       the available margin. The sidebar clips anything above that space. */
-    margin-block-start: calc(
-      -8px * var(--tf-density) - var(--border-width) - min(0.5lh, 8px * var(--tf-density))
-    );
     margin-inline: .4rem;
-    pointer-events: none;
     padding: 0 2px;
   }
   &:hover::before {
@@ -50,11 +44,12 @@ box#vertical-tabs {
     }
   }
   &::before {
+    --textfox-title-padding: 0px;
     display: var(--tf-display-titles);
     content: "tabs";
     background-color: var(--tf-bg);
     position: absolute;
-    margin: -1rem .75rem;
+    margin-inline: .75rem;
     padding: 0 2px;
   }
 

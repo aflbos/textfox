@@ -262,6 +262,66 @@ return [
     print("PASS equal frame gaps and unclipped vertical tab titles in all styles and densities")
 
 
+def check_compact_frame_titles(execute, *, vertical=False):
+    execute("""
+document.documentElement.style.setProperty("--tf-density", "0.75");
+setToolbarVisibility(document.getElementById("PersonalToolbar"), true);
+""")
+    if vertical:
+        execute("""
+window.SidebarController.show("viewBookmarksSidebar");
+gBrowser.getFindBar().then(bar => bar.open());
+""")
+    read = """
+const frames = [
+  ...["nav-bar", "PersonalToolbar", arguments[0] ? "vertical-tabs" : "TabsToolbar", "tabbrowser-tabbox"]
+    .map(id => document.getElementById(id)),
+  ...(arguments[0] ? [
+    document.getElementById("sidebar-box"),
+    window.SidebarController.sidebarMain?.shadowRoot?.querySelector(".buttons-wrapper"),
+    document.querySelector("findbar"),
+    document.getElementById("status-bar"),
+  ] : []),
+];
+if (frames.some(frame => !frame?.getBoundingClientRect().height)) return null;
+return frames.map(frame => {
+  const box = frame.getBoundingClientRect();
+  const style = getComputedStyle(frame);
+  const title = getComputedStyle(frame, "::before");
+  const anchor = style.position === "static" ? frame.offsetParent : frame;
+  const origin = anchor.getBoundingClientRect().top + anchor.clientTop;
+  const top = origin + parseFloat(title.top) + parseFloat(title.marginTop);
+  return [title.content, top, top + parseFloat(title.height), box.top];
+});
+"""
+    frames = wait_for(lambda: execute(read, vertical), bool, "compact frames")
+    for title, top, bottom, frame_top in frames:
+        assert -0.1 <= top <= frame_top < bottom, (title, top, bottom, frame_top)
+
+    if vertical:
+        execute("""
+const primary = gBrowser.selectedTab;
+const secondary = gBrowser.addTrustedTab("about:blank");
+gBrowser.addTabSplitView([primary, secondary]);
+gBrowser.selectedTab = secondary;
+""")
+        split = wait_for(
+            lambda: execute("""
+const panel = document.querySelector(".split-view-panel.deck-selected");
+if (!panel) return null;
+return [
+  getComputedStyle(panel, "::before").content,
+  Number(getComputedStyle(panel, "::before").zIndex),
+  Number(getComputedStyle(panel.querySelector(".browserContainer")).zIndex),
+];
+"""),
+            bool,
+            "active split frame",
+        )
+        assert split[0] == '"active split"' and split[1] > split[2], split
+    print(f"PASS compact frame titles remain readable ({'vertical' if vertical else 'horizontal'})")
+
+
 def check_status_and_motion(execute):
     start = wait_for(lambda: execute(STATUS), lambda _: True, "status bar or tabs not ready")
     assert start["barBorder"] == "2px" and start["barMargin"] == "6px", start
@@ -643,6 +703,7 @@ def main():
         check_native_density(execute)
         check_sine_preferences(execute)
         check_sine_area_titles(execute)
+        check_compact_frame_titles(execute)
     with gecko_profile(browser, preferences=PREFERENCES, theme_dir=ROOT) as (_, _, execute):
         info = execute("return [Services.appinfo.name, Services.appinfo.version];")
         if info[0].lower() != "waterfox":
@@ -663,6 +724,7 @@ def main():
         execute("window.fullScreen = false;")
         check_waterfox_appearance(execute, "vertical")
         check_frame_spacing(execute)
+        check_compact_frame_titles(execute, vertical=True)
 
 
 if __name__ == "__main__":

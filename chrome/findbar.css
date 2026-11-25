@@ -16,11 +16,13 @@ findbar {
   }
 
   &::before {
+    --textfox-title-padding: 8px;
+    --textfox-title-gap: 1rem;
     display: var(--tf-display-titles);
     content: "find";
     background-color: var(--tf-bg);
     position: absolute;
-    margin: -1.75rem .75rem;
+    margin-inline: .75rem;
     padding: 0 4px;
   }
 
