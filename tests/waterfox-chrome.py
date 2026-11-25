@@ -265,6 +265,74 @@ return [
     print("PASS equal frame gaps and unclipped vertical tab titles in all styles and densities")
 
 
+def check_expanded_pinned_grid(execute):
+    execute("""
+const controller = window.SidebarController;
+if (!controller.sidebarMain.expanded) controller.handleToolbarButtonClick();
+for (let i = 0; i < 6; i++) {
+  const tab = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
+  tab.setAttribute("textfox-test-pin", "");
+  gBrowser.pinTab(tab);
+}
+""")
+    read = """
+const tabs = gBrowser.tabContainer;
+const pins = [...tabs.querySelectorAll("[textfox-test-pin]")];
+return pins.map(tab => {
+  const frame = tab.querySelector(".tab-background").getBoundingClientRect();
+  const icon = tab.querySelector(".tab-icon-image").getBoundingClientRect();
+  return {
+    nativeGrid: tabs.isContainerVerticalPinnedGrid(tab),
+    row: Math.round(tab.getBoundingClientRect().top),
+    width: frame.width,
+    height: frame.height,
+    icon: [icon.width, icon.height],
+    center: [
+      frame.left + frame.width / 2 - icon.left - icon.width / 2,
+      frame.top + frame.height / 2 - icon.top - icon.height / 2,
+    ],
+  };
+});
+"""
+    try:
+        wait_for(
+            lambda: execute(read),
+            lambda pins: len(pins) == 6 and all(pin["nativeGrid"] for pin in pins),
+            "expanded native pinned grid",
+        )
+        for density in (0, 1, 2):
+            execute('Services.prefs.setIntPref("browser.uidensity", arguments[0]);', density)
+            pins = execute(read)
+            rows = [pin["row"] for pin in pins]
+            assert len(rows) == 6 and rows[0] == rows[2] < rows[3] == rows[5], (density, rows)
+            assert all(
+                pin["nativeGrid"] and pin["width"] >= 48
+                and abs(pin["width"] - pin["height"]) < 0.1
+                and pin["icon"] == [28, 28]
+                and all(abs(offset) < 1 for offset in pin["center"])
+                for pin in pins
+            ), (density, pins)
+        execute('document.getElementById("vertical-tabs").style.maxInlineSize = "142px";')
+        rows = [pin["row"] for pin in execute(read)]
+        assert rows[0] == rows[1] < rows[2] == rows[3] < rows[4] == rows[5], rows
+    finally:
+        execute("""
+document.getElementById("vertical-tabs").style.removeProperty("max-inline-size");
+Services.prefs.setIntPref("browser.uidensity", 0);
+for (const tab of gBrowser.tabContainer.querySelectorAll("[textfox-test-pin]")) {
+  gBrowser.removeTab(tab, { animate: false });
+}
+const controller = window.SidebarController;
+if (controller.sidebarMain.expanded) controller.handleToolbarButtonClick();
+""")
+    wait_for(
+        lambda: execute('return gBrowser.tabContainer.hasAttribute("expanded");'),
+        lambda expanded: not expanded,
+        "collapsed sidebar after pinned grid checks",
+    )
+    print("PASS expanded pinned grid has square tiles, centered icons and responsive columns")
+
+
 def check_collapsed_tab_frames(execute):
     pinned = execute("""
 const tab = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
@@ -897,6 +965,7 @@ def main():
         check_frame_spacing(execute)
         check_tab_drop_position(execute, "vertical")
         check_compact_frame_titles(execute, vertical=True)
+        check_expanded_pinned_grid(execute)
 
 
 if __name__ == "__main__":

@@ -84,6 +84,33 @@ box#vertical-tabs {
   --tab-min-height: max(calc(32px * var(--tf-density)), calc(var(--tf-font-size) + 10px));
 }
 
+/* Size the tiles through Gecko's grid variables so drag and drop and the
+   pinned section's splitter use the same row geometry. */
+@media not -moz-pref("sidebar.visibility", "expand-on-hover") {
+  #vertical-tabs > #tabbrowser-tabs[orient="vertical"][expanded] > #pinned-tabs-container {
+    --textfox-pinned-tile-size: clamp(48px, 28cqi, 72px);
+    --tab-pinned-min-width-expanded: calc(var(--textfox-pinned-tile-size) + 2 * var(--tab-pinned-margin-inline-expanded)) !important;
+    --tab-height-with-margin-padding: calc(var(--textfox-pinned-tile-size) + 2 * var(--tab-block-margin) + 5px) !important;
+
+    > .tabbrowser-tab[pinned] > .tab-stack {
+      > .tab-background {
+        inline-size: min(100%, var(--textfox-pinned-tile-size)) !important;
+        block-size: var(--textfox-pinned-tile-size);
+        place-self: center;
+      }
+
+      > .tab-content {
+        padding-inline: 0 !important;
+      }
+
+      .tab-icon-image {
+        width: 28px !important;
+        height: 28px !important;
+      }
+    }
+  }
+}
+
 /* Let the row grow with density and limit the square frame to the space
    available in both axes of the collapsed rail. */
 #tabbrowser-tabs[orient="vertical"]:not([expanded])
