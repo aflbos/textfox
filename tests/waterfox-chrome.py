@@ -779,15 +779,20 @@ def check_sine_tree_guides(execute):
     expanded = 'return document.getElementById("tabbrowser-tabs").hasAttribute("expanded");'
     if not execute(expanded):
         execute(toggle)
-    wait_for(lambda: execute(expanded), bool, "expanded vertical tabs")
+    wait_for(
+        lambda: execute(expanded) and execute(
+            'return !document.getElementById("sidebar-container").hasAttribute("sidebar-ongoing-animations");'
+        ),
+        bool, "expanded vertical tabs at rest",
+    )
     assert execute("""
 const { TreeTabsService } = ChromeUtils.importESModule("resource:///modules/TreeTabsService.sys.mjs");
-const parent = gBrowser.selectedTab;
-const [child, grandchild, sibling] = Array.from({ length: 3 }, () =>
-  gBrowser.addTrustedTab("about:blank", { skipAnimation: true })
+const [parent, child, grandchild, sibling] = [true, true, false, false].map(createLazyBrowser =>
+  gBrowser.addTrustedTab("about:blank", { skipAnimation: true, createLazyBrowser })
 );
 window.textfoxExpandedGuides = { parent, child, grandchild, sibling };
-return TreeTabsService.attachTab(child, parent) && TreeTabsService.attachTab(grandchild, child)
+return !parent.linkedPanel && !child.linkedPanel &&
+  TreeTabsService.attachTab(child, parent) && TreeTabsService.attachTab(grandchild, child)
   && TreeTabsService.attachTab(sibling, parent);
 """)
     read = """
@@ -811,6 +816,9 @@ const measure = (start, height) => {
   }));
 };
 const frame = parent.querySelector(".tab-background").getBoundingClientRect();
+const nestedFrame = grandchild.querySelector(".tab-background").getBoundingClientRect();
+const innerTrack = nested.left + parseFloat(nestedLine.insetInlineStart)
+  + parseFloat(nestedLine.backgroundPositionX.split(",")[1]);
 const frameEdge = Math.round(frame.bottom) - 1;
 const nextRow = Math.floor(child.getBoundingClientRect().top);
 return {
@@ -819,6 +827,8 @@ return {
   nestedTracks: nestedLine.backgroundImage.split("linear-gradient").length - 1,
   paintedTrack: measure(Math.floor(nested.top) + 5, 1),
   paintedJoin: measure(frameEdge, Math.max(1, nextRow - frameEdge + 3)),
+  frameClearance: [frame.left - track, nestedFrame.left - innerTrack],
+  parentsUnloaded: !parent.linkedPanel && !child.linkedPanel,
 };
 """
     try:
@@ -828,6 +838,8 @@ return {
             "expanded guide paints through the gutter of a nested tab",
         )
         assert neutral["nestedTracks"] == 3 and neutral["paintedJoin"] >= 25, neutral
+        assert all(distance is not None and distance > 1 for distance in neutral["frameClearance"]), neutral
+        assert neutral["parentsUnloaded"], neutral
         execute('Services.prefs.setStringPref("textfox.sine.treeGuides", "accent");')
         accent = wait_for(
             lambda: execute(read), lambda style: style["color"] != neutral["color"],
@@ -857,8 +869,8 @@ return {
         execute("""
 Services.prefs.clearUserPref("textfox.sine.treeGuides");
 Services.prefs.clearUserPref("browser.tabs.verticalTabs.tree.indentPx");
-const { child, grandchild, sibling } = window.textfoxExpandedGuides;
-for (const tab of [grandchild, child, sibling]) gBrowser.removeTab(tab, { animate: false });
+const { parent, child, grandchild, sibling } = window.textfoxExpandedGuides;
+for (const tab of [grandchild, child, sibling, parent]) gBrowser.removeTab(tab, { animate: false });
 delete window.textfoxExpandedGuides;
 """)
     print("PASS expanded continuous guides follow native indentation and Sine appearance options")
@@ -1281,8 +1293,8 @@ const controller = window.SidebarController;
 const tabs = gBrowser.tabContainer;
 const wasExpanded = controller.sidebarMain.expanded;
 if (wasExpanded) controller.handleToolbarButtonClick();
-const [root, child, grandchild, sibling, plain] = Array.from({ length: 5 }, () =>
-  gBrowser.addTrustedTab("about:blank", { skipAnimation: true })
+const [root, child, grandchild, sibling, plain] = [true, true, false, false, false].map(createLazyBrowser =>
+  gBrowser.addTrustedTab("about:blank", { skipAnimation: true, createLazyBrowser })
 );
 const service = gBrowser.TreeTabsService;
 const chromeStyle = document.documentElement.style;
@@ -1330,7 +1342,9 @@ try {
   await nextFrame();
   await nextFrame();
   return {
-    showTree, lines, contrast, matchingGuideColors, collapsed, worksInRail: !tabs.hasAttribute("expanded") &&
+    showTree, lines, contrast, matchingGuideColors, collapsed,
+    parentsUnloaded: !root.linkedPanel && !child.linkedPanel,
+    worksInRail: !tabs.hasAttribute("expanded") &&
       arrow.getAttribute("aria-expanded") === "true" && !child.hasAttribute("data-tree-hidden") &&
       root.hasAttribute("textfox-tree-line"),
   };
@@ -1351,7 +1365,7 @@ try {
     ], state
     assert state["collapsed"] == ["false", True, "3", "attr(data-tree-counter)", False], state
     assert state["contrast"] >= 60 and state["matchingGuideColors"], state
-    assert state["worksInRail"], state
+    assert state["worksInRail"] and state["parentsUnloaded"], state
     print("PASS collapsed sidebar draws continuous guides from each parent to its last visible child")
 
 

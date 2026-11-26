@@ -45,11 +45,15 @@
   function paintTreeLines() {
     treeFrame = 0;
     const expanded = tabs.hasAttribute("expanded");
-    const rows = !tabs.verticalMode
+    const tree = browser.TreeTabsService;
+    const rows = !tabs.verticalMode || !tree
       ? []
       : tabs.visibleTabs.filter(tab => tab.hasAttribute("data-tree-level") &&
           !tab.hasAttribute("data-tree-hidden") && !tab.closing && !tab.pinned);
-    const indices = new Map(rows.map((tab, index) => [tab.linkedPanel, index]));
+    const indices = new Map(rows.map((tab, index) => [tab, index]));
+    // A restored, unloaded parent may not have a linkedPanel yet.
+    const parents = rows.map(tab => tree.getParent(tab));
+    const ancestors = rows.map(tab => new Set(tree.getAncestors(tab)));
     const lastChildren = new Map();
     const tracks = rows.map(() => []);
     const depth = tab => expanded
@@ -57,8 +61,8 @@
       : Math.min(Number(tab.dataset.treeLevel), 2);
     const offset = level => `calc(var(--textfox-tree-track-start) + ${level} * var(--textfox-tree-track-step))`;
     const ink = "linear-gradient(currentColor 0 0)";
-    for (const [index, tab] of rows.entries()) {
-      const parent = indices.get(tab.dataset.treeParent);
+    for (const [index, tab] of parents.entries()) {
+      const parent = indices.get(tab);
       if (parent !== undefined && parent < index) lastChildren.set(parent, index);
     }
 
@@ -66,7 +70,9 @@
     for (const [parent, last] of lastChildren) {
       const level = depth(rows[parent]);
       tracks[parent][level] |= 2;
-      for (let row = parent + 1; row < last; row++) tracks[row][level] |= 3;
+      for (let row = parent + 1; row < last; row++) {
+        if (ancestors[row].has(rows[parent])) tracks[row][level] |= 3;
+      }
       tracks[last][level] |= 1;
     }
 
@@ -75,14 +81,15 @@
       const lines = tracks[index].flatMap((track, level) => {
         if (!track) return [];
         const edge = track === 2 ? "bottom" : "top";
-        const half = !expanded ? "50%" : track === 2 ? "calc(50% - 5px)" : "calc(50% + 0.5px)";
+        const half = expanded ? "calc(50% + 0.5px)" : "50%";
         const height = track === 3 ? "100%" : half;
         return `${ink} var(--textfox-tree-side) ${offset(level)} ${edge} 0 / 1px ${height} no-repeat`;
       });
       if (!lines.length) continue;
-      const parent = rows[indices.get(tab.dataset.treeParent)];
-      if (expanded && parent) {
-        const start = offset(depth(parent));
+      const parent = parents[index];
+      if (expanded && (indices.has(parent) || lastChildren.has(index))) {
+        const anchor = indices.has(parent) ? parent : tab;
+        const start = offset(depth(anchor));
         const width = `max(0px, calc(var(--textfox-tree-frame-start) - ${start}))`;
         lines.push(`${ink} var(--textfox-tree-side) ${start} top 50% / ${width} 1px no-repeat`);
       }

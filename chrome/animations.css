@@ -36,10 +36,15 @@
     animation: tf-tab-in var(--tf-animation-duration) ease-out;
   }
 
+  /* A tree row must stay aligned with its guide while it fades in. */
+  #vertical-tabs[tree-tabs-enabled] {
+    --textfox-tab-enter-offset: 0px;
+  }
+
   @keyframes tf-tab-in {
     from {
       opacity: 0;
-      transform: translateX(-8px);
+      transform: translateX(var(--textfox-tab-enter-offset, -8px));
     }
   }
 

@@ -112,7 +112,7 @@
   &[expanded] {
     --textfox-tree-guide-color: color-mix(in srgb, currentColor 55%, var(--tf-sidebar-background));
     --textfox-tree-track-step: var(--tree-indent-unit);
-    --textfox-tree-track-start: calc(var(--tab-inline-padding) + var(--tree-twisty-size) / 2);
+    --textfox-tree-track-start: max(1px, calc(var(--tab-inner-inline-margin) - 4px));
 
     .tabbrowser-tab[textfox-tree-line] {
       --textfox-tree-row-indent: calc(var(--tree-indent-unit) * var(--tree-level, 0));
@@ -121,18 +121,27 @@
       border-inline-start-color: transparent !important;
       overflow-clip-margin: calc(var(--textfox-tree-row-indent) + 2px) !important;
 
-      &[data-tree-parent]:not([data-tree-has-children], tab-split-view-wrapper > *) {
+      &[data-tree-level]:not([data-tree-level="0"], [data-tree-has-children], tab-split-view-wrapper > *) {
         --textfox-tree-frame-margin: calc(var(--tab-inner-inline-margin) + var(--tree-twisty-size) + var(--tree-twisty-gap));
       }
 
       &::before {
-        /* Keep the track above the frame and overlap neighboring rows. */
-        z-index: 1;
+        /* Overlap neighboring rows without drawing over the tab frame. */
         inset-block: -1px;
         inset-inline-start: calc(0px - var(--textfox-tree-row-indent));
       }
     }
   }
+}
+
+/* Tab positions are transient during native resize and reorder animations. */
+#sidebar-container[sidebar-ongoing-animations] #vertical-tabs[tree-tabs-enabled]
+  #tabbrowser-tabs[orient="vertical"] .tabbrowser-tab[textfox-tree-line]::before,
+#vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[orient="vertical"][movingtab]
+  .tabbrowser-tab[textfox-tree-line]::before,
+#vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[orient="vertical"]:not([expanded])[movingtab]
+  .tabbrowser-tab[textfox-tree-line] > .tab-stack::before {
+  visibility: hidden;
 }
 
 @media -moz-pref("textfox.sine.treeGuides", "accent") and (not (forced-colors)) {
@@ -159,7 +168,7 @@
 
 /* The icon rail has no room for indentation. Keep the tree cues in its gutters. */
 #vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[orient="vertical"]:not([expanded]) {
-  .tabbrowser-tab[data-tree-parent] {
+  .tabbrowser-tab:is([data-tree-parent], [textfox-tree-line]):not([data-tree-level="0"]) {
     --textfox-tree-elbow-start: 6px;
 
     &[data-tree-level="1"] {
