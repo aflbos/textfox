@@ -39,6 +39,67 @@
     tabs.addEventListener(type, handleCollapsedDisclosure, { capture: true });
   }
 
+  let paintedTreeRows = new Set();
+  let treeFrame = 0;
+
+  function paintTreeLines() {
+    treeFrame = 0;
+    const rows = tabs.hasAttribute("expanded") || !tabs.verticalMode
+      ? []
+      : tabs.visibleTabs.filter(tab => tab.hasAttribute("data-tree-level") &&
+          !tab.hasAttribute("data-tree-hidden") && !tab.closing && !tab.pinned);
+    const indices = new Map(rows.map((tab, index) => [tab.linkedPanel, index]));
+    const lastChildren = new Map();
+    const tracks = rows.map(() => [0, 0, 0]);
+    for (const [index, tab] of rows.entries()) {
+      const parent = indices.get(tab.dataset.treeParent);
+      if (parent < index) lastChildren.set(parent, index);
+    }
+
+    // Each branch starts at its parent's center and ends at the last visible child's center.
+    for (const [parent, last] of lastChildren) {
+      const depth = Math.min(Number(rows[parent].dataset.treeLevel), 2);
+      tracks[parent][depth] |= 2;
+      for (let row = parent + 1; row < last; row++) tracks[row][depth] |= 3;
+      tracks[last][depth] |= 1;
+    }
+
+    const nextPainted = new Set();
+    for (const [index, tab] of rows.entries()) {
+      const lines = tracks[index].flatMap((track, depth) => {
+        if (!track) return [];
+        const edge = track === 2 ? "bottom" : "top";
+        const height = track === 3 ? "100%" : "50%";
+        return `linear-gradient(currentColor 0 0) var(--textfox-tree-side) ${2 + depth * 2}px ${edge} 0 / 1px ${height} no-repeat`;
+      });
+      if (!lines.length) continue;
+      tab.style.setProperty("--textfox-tree-lines", lines.join(", "));
+      tab.setAttribute("textfox-tree-line", "");
+      nextPainted.add(tab);
+    }
+    for (const tab of paintedTreeRows) {
+      if (nextPainted.has(tab)) continue;
+      tab.style.removeProperty("--textfox-tree-lines");
+      tab.removeAttribute("textfox-tree-line");
+    }
+    paintedTreeRows = nextPainted;
+  }
+
+  const treeObserver = new MutationObserver(() => {
+    if (!treeFrame) treeFrame = window.requestAnimationFrame(paintTreeLines);
+  });
+  treeObserver.observe(tabs, {
+    subtree: true,
+    childList: true,
+    attributeFilter: ["expanded", "orient", "data-tree-level", "data-tree-parent", "data-tree-hidden",
+      "hidden", "collapsed", "closing"],
+  });
+  treeFrame = window.requestAnimationFrame(paintTreeLines);
+  window.addUnloadListener?.(() => {
+    treeObserver.disconnect();
+    window.cancelAnimationFrame(treeFrame);
+  });
+
   function getMove(tab, direction) {
     if (!tab?.visible || tab.closing || tab.multiselected) return null;
 

@@ -79,7 +79,8 @@ _a firefox theme for the tui enthusiast_
 >   Waterfox, usar a cor de destaque do Textfox ou ficar ocultas. Os títulos
 >   podem ser ocultados por área, e a opção geral continua ocultando todos.
 >   Com a barra retraída, as setas mostram quais abas têm filhas, as guias
->   marcam as filhas visíveis e o número indica quantas estão recolhidas.
+>   contínuas ligam cada pai às filhas visíveis e o número indica quantas
+>   estão recolhidas.
 >   Clique na seta para abrir ou recolher o ramo pela própria barra retraída.
 >   Em **Cores por área**, menus de contexto, barra lateral e barra de status
 >   podem usar o padrão do Textfox, cores neutras ou as cores do tema ativo.

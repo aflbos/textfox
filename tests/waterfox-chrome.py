@@ -1223,41 +1223,64 @@ try {
 def check_collapsed_tree_cues(execute):
     execute((ROOT / "chrome/tab-move-menu.uc.js").read_text(encoding="utf-8"))
     state = execute("""
+return (async () => {
 const controller = window.SidebarController;
 const tabs = gBrowser.tabContainer;
 const wasExpanded = controller.sidebarMain.expanded;
 if (wasExpanded) controller.handleToolbarButtonClick();
-const [root, child, grandchild, plain] = Array.from({ length: 4 }, () =>
+const [root, child, grandchild, sibling, plain] = Array.from({ length: 5 }, () =>
   gBrowser.addTrustedTab("about:blank", { skipAnimation: true })
 );
 const service = gBrowser.TreeTabsService;
 try {
   service.attachTab(child, root);
   service.attachTab(grandchild, child);
+  service.attachTab(sibling, root);
+  const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
+  await nextFrame();
+  await nextFrame();
   const arrow = root.querySelector(".tab-tree-disclosure");
   const guide = tab => getComputedStyle(tab.querySelector(".tab-stack"), "::before");
   const counter = root.querySelector(".tab-content");
   const showTree = [getComputedStyle(arrow).display, arrow.getAttribute("aria-expanded"),
-    guide(child).borderInlineStartWidth, guide(child).insetInlineStart,
+    guide(root).insetInlineStart, guide(child).insetInlineStart,
     guide(grandchild).insetInlineStart, guide(plain).content];
+  const lines = [root, child, grandchild, sibling, plain].map(tab => {
+    const style = getComputedStyle(tab, "::before");
+    return [style.backgroundPosition, style.backgroundSize];
+  });
 
   arrow.click();
+  await nextFrame();
+  await nextFrame();
   const collapsed = [arrow.getAttribute("aria-expanded"), child.hasAttribute("data-tree-hidden"),
-    counter.getAttribute("data-tree-counter"), getComputedStyle(counter, "::before").content];
+    counter.getAttribute("data-tree-counter"), getComputedStyle(counter, "::before").content,
+    root.hasAttribute("textfox-tree-line")];
   arrow.click();
+  await nextFrame();
+  await nextFrame();
   return {
-    showTree, collapsed, worksInRail: !tabs.hasAttribute("expanded") &&
-      arrow.getAttribute("aria-expanded") === "true" && !child.hasAttribute("data-tree-hidden"),
+    showTree, lines, collapsed, worksInRail: !tabs.hasAttribute("expanded") &&
+      arrow.getAttribute("aria-expanded") === "true" && !child.hasAttribute("data-tree-hidden") &&
+      root.hasAttribute("textfox-tree-line"),
   };
 } finally {
-  for (const tab of [grandchild, child, root, plain]) gBrowser.removeTab(tab, { animate: false });
+  for (const tab of [grandchild, child, sibling, root, plain]) gBrowser.removeTab(tab, { animate: false });
   if (wasExpanded) controller.handleToolbarButtonClick();
 }
+})();
 """)
-    assert state["showTree"] == ["block", "true", "1px", "2px", "4px", "none"], state
-    assert state["collapsed"] == ["false", True, "2", "attr(data-tree-counter)"], state
+    assert state["showTree"] == ["block", "true", "2px", "2px", "4px", "none"], state
+    assert state["lines"] == [
+        ["2px 100%", "1px 50%"],
+        ["2px 0px, 4px 100%", "1px 100%, 1px 50%"],
+        ["2px 0px, 4px 0px", "1px 100%, 1px 50%"],
+        ["2px 0px", "1px 50%"],
+        ["0% 0%", "auto"],
+    ], state
+    assert state["collapsed"] == ["false", True, "3", "attr(data-tree-counter)", False], state
     assert state["worksInRail"], state
-    print("PASS collapsed sidebar shows tree levels and counts and can toggle a branch")
+    print("PASS collapsed sidebar draws continuous guides from each parent to its last visible child")
 
 
 def check_tree_reorder_keeps_root(execute):
