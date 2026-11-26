@@ -1246,6 +1246,96 @@ try {
     print(f"PASS {orientation} menu and native keyboard shortcuts reorder the intended tab")
 
 
+def check_tree_colors(execute):
+    state = execute("""
+return (async () => {
+  const { SessionStore } = ChromeUtils.importESModule("resource:///modules/sessionstore/SessionStore.sys.mjs");
+  const tree = gBrowser.TreeTabsService;
+  const context = window.TabContextMenu;
+  const menu = document.getElementById("textfox-tree-color-menu");
+  const popup = menu.firstElementChild;
+  const controller = window.SidebarController;
+  const wasExpanded = controller.sidebarMain.expanded;
+  const oldContextTab = context.contextTab;
+  const oldMultiselected = context.multiselected;
+  const key = "textfox-tree-color";
+  const [root, first, migrating, secondRoot, secondChild, restored, restoredChild] =
+    [true, false, false, true, false, false, false].map(createLazyBrowser =>
+      gBrowser.addTrustedTab("about:blank", { skipAnimation: true, createLazyBrowser })
+    );
+  const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+  const settle = async () => { await frame(); await frame(); };
+  const colorOf = tab => tab.getAttribute("textfox-tree-color");
+  const guide = tab => getComputedStyle(tab, "::before").color;
+  const marker = tab => getComputedStyle(tab.querySelector(".tab-stack"), "::after").backgroundColor;
+  const option = value => [...popup.children].find(item => item.getAttribute("value") === value);
+  const showColors = tab => {
+    context.contextTab = tab;
+    context.multiselected = false;
+    popup.dispatchEvent(new Event("popupshowing", { bubbles: true }));
+  };
+  const choose = (tab, value) => {
+    showColors(tab);
+    option(value).dispatchEvent(new Event("command", { bubbles: true }));
+  };
+  try {
+    tree.attachTab(first, root);
+    tree.attachTab(migrating, root);
+    tree.attachTab(secondChild, secondRoot);
+    choose(first, "blue");
+    choose(secondRoot, "orange");
+    await settle();
+    showColors(first);
+    const initial = [colorOf(root), colorOf(first), colorOf(secondRoot), colorOf(secondChild)];
+    const applied = guide(root) === guide(first) && guide(root) !== guide(secondRoot)
+      && marker(root) === guide(root) && !first.hasAttribute("textfox-tree-color-root");
+    const menuState = menu.parentNode.id === "tabContextMenu" && option("blue").checked
+      && !option("orange").checked;
+    const saved = SessionStore.getCustomTabValue(root, key) === "blue"
+      && !SessionStore.getCustomTabValue(first, key);
+
+    tree.collapseSubtree(root);
+    await settle();
+    const collapsed = root.hasAttribute("textfox-tree-color-root")
+      && !root.hasAttribute("textfox-tree-line") && first.hasAttribute("data-tree-hidden");
+    tree.expandSubtree(root);
+    tree.attachTab(migrating, secondRoot);
+    window.TreeTabsDnD._syncSubtreeStripPosition(migrating);
+    await settle();
+    const inherited = colorOf(migrating) === "orange" && guide(migrating) === guide(secondRoot);
+
+    const savedState = JSON.parse(SessionStore.getTabState(root));
+    SessionStore.setTabState(restored, JSON.stringify({ entries: savedState.entries, index: savedState.index,
+      extData: { [key]: savedState.extData[key] } }));
+    await settle();
+    tree.attachTab(restoredChild, restored);
+    await settle();
+    const reloaded = colorOf(restored) === "blue" && colorOf(restoredChild) === "blue";
+
+    if (!controller.sidebarMain.expanded) controller.handleToolbarButtonClick();
+    await settle();
+    const expanded = gBrowser.tabContainer.hasAttribute("expanded") &&
+      guide(root) === guide(first) && marker(root) === guide(root);
+    choose(root, "");
+    await settle();
+    const reset = !colorOf(root) && !colorOf(first) &&
+      !root.hasAttribute("textfox-tree-color-root") && !SessionStore.getCustomTabValue(root, key);
+    return { initial, applied, menuState, saved, collapsed, inherited, reloaded, expanded, reset };
+  } finally {
+    context.contextTab = oldContextTab;
+    context.multiselected = oldMultiselected;
+    for (const tab of [first, migrating, secondChild, restoredChild, root, secondRoot, restored]) {
+      gBrowser.removeTab(tab, { animate: false });
+    }
+    if (controller.sidebarMain.expanded !== wasExpanded) controller.handleToolbarButtonClick();
+  }
+})();
+""")
+    assert state.pop("initial") == ["blue", "blue", "orange", "orange"], state
+    assert all(state.values()), state
+    print("PASS independent tree colors persist in the session and follow the root in both sidebar modes")
+
+
 def check_shift_drop_requires_parent(execute):
     state = execute("""
 return (async () => {
@@ -1561,6 +1651,7 @@ def main():
         check_pinned_favicon_cache(execute)
         check_pinned_row_drop(execute)
         check_tab_move_menu(execute, "vertical")
+        check_tree_colors(execute)
 
 
 if __name__ == "__main__":

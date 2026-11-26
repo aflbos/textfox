@@ -86,6 +86,32 @@
 
 /* ── Abas em árvore (browser.tabs.verticalTabs.tree.enabled) ───────────── */
 
+:where([textfox-tree-color="blue"]) {
+  --textfox-tree-color: light-dark(var(--tab-group-color-blue), var(--tab-group-color-blue-invert));
+}
+:where([textfox-tree-color="cyan"]) {
+  --textfox-tree-color: light-dark(var(--tab-group-color-cyan), var(--tab-group-color-cyan-invert));
+}
+:where([textfox-tree-color="green"]) {
+  --textfox-tree-color: light-dark(var(--tab-group-color-green), var(--tab-group-color-green-invert));
+}
+:where([textfox-tree-color="yellow"]) {
+  --textfox-tree-color: light-dark(var(--tab-group-color-yellow), var(--tab-group-color-yellow-invert));
+}
+:where([textfox-tree-color="orange"]) {
+  --textfox-tree-color: light-dark(var(--tab-group-color-orange), var(--tab-group-color-orange-invert));
+}
+:where([textfox-tree-color="pink"]) {
+  --textfox-tree-color: light-dark(var(--tab-group-color-pink), var(--tab-group-color-pink-invert));
+}
+:where([textfox-tree-color="purple"]) {
+  --textfox-tree-color: light-dark(var(--tab-group-color-purple), var(--tab-group-color-purple-invert));
+}
+
+#textfox-tree-color-menu menuitem[textfox-tree-color]:not([_moz-menuactive]) {
+  color: var(--textfox-tree-color);
+}
+
 #vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[orient="vertical"] {
   --textfox-tree-track-start: 2px;
   --textfox-tree-track-step: 2px;
@@ -104,9 +130,21 @@
       position: absolute;
       inset: 0;
       background: var(--textfox-tree-lines);
-      color: var(--textfox-tree-guide-color);
+      color: var(--textfox-tree-color, var(--textfox-tree-guide-color));
       pointer-events: none;
     }
+  }
+
+  .tabbrowser-tab[textfox-tree-color-root] > .tab-stack::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: 2px;
+    inset-block-start: 3px;
+    inline-size: 5px;
+    block-size: 5px;
+    border-radius: var(--tf-rounding);
+    background-color: var(--textfox-tree-color);
+    pointer-events: none;
   }
 
   &[expanded] {
@@ -187,8 +225,8 @@
     inset-block-start: 0;
     inline-size: 6px;
     block-size: 50%;
-    border-inline-start: 1px solid var(--textfox-tree-guide-color);
-    border-block-end: 1px solid var(--textfox-tree-guide-color);
+    border-inline-start: 1px solid var(--textfox-tree-color, var(--textfox-tree-guide-color));
+    border-block-end: 1px solid var(--textfox-tree-color, var(--textfox-tree-guide-color));
     pointer-events: none;
   }
 

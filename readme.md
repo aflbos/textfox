@@ -83,6 +83,8 @@ _a firefox theme for the tui enthusiast_
 >   contínuas ligam cada pai às filhas visíveis e o número indica quantas
 >   estão recolhidas.
 >   Clique na seta para abrir ou recolher o ramo pela própria barra retraída.
+>   Use **Cor da árvore** no menu de contexto de uma aba do ramo para colorir
+>   as guias e o marcador da raiz. A cor acompanha a raiz na sessão.
 >   Em **Cores por área**, menus de contexto, barra lateral e barra de status
 >   podem usar o padrão do Textfox, cores neutras ou as cores do tema ativo.
 >   Com o Adaptive Tab Bar Colour, as duas primeiras áreas usam suas cores

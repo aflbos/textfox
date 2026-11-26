@@ -2,16 +2,30 @@
   "use strict";
 
   const browser = window.gBrowser;
+  const contextMenu = document.getElementById("tabContextMenu");
+  const moveMenu = document.getElementById("context_moveTabOptions");
   const menu = document.getElementById("moveTabOptionsMenu");
   const firstNativeItem = document.getElementById("context_moveToStart");
-  if (!browser || !menu || !firstNativeItem || document.getElementById("textfox-move-tab-back")) {
+  if (!browser || !contextMenu || !moveMenu || !menu || !firstNativeItem ||
+      document.getElementById("textfox-move-tab-back")) {
     return;
   }
 
   const tabs = browser.tabContainer;
   tabs.setAttribute("textfox-tree-disclosure", "");
   const { ShortcutUtils } = ChromeUtils.importESModule("resource://gre/modules/ShortcutUtils.sys.mjs");
+  const { SessionStore } = ChromeUtils.importESModule("resource:///modules/sessionstore/SessionStore.sys.mjs");
   const portuguese = /^pt(?:-|$)/i.test(Services.locale.appLocaleAsBCP47);
+  const treeColorKey = "textfox-tree-color";
+  const palette = new Map([
+    ["blue", portuguese ? "Azul" : "Blue"],
+    ["cyan", portuguese ? "Ciano" : "Cyan"],
+    ["green", portuguese ? "Verde" : "Green"],
+    ["yellow", portuguese ? "Amarelo" : "Yellow"],
+    ["orange", portuguese ? "Laranja" : "Orange"],
+    ["pink", portuguese ? "Rosa" : "Pink"],
+    ["purple", portuguese ? "Roxo" : "Purple"],
+  ]);
   const labels = portuguese
     ? {
         vertical: ["Mover uma posição para cima", "Mover uma posição para baixo"],
@@ -42,6 +56,11 @@
   let paintedTreeRows = new Set();
   let treeFrame = 0;
 
+  function getSavedTreeColor(root) {
+    const color = SessionStore.getCustomTabValue(root, treeColorKey);
+    return palette.has(color) ? color : "";
+  }
+
   function paintTreeLines() {
     treeFrame = 0;
     const expanded = tabs.hasAttribute("expanded");
@@ -53,7 +72,11 @@
     const indices = new Map(rows.map((tab, index) => [tab, index]));
     // A restored, unloaded parent may not have a linkedPanel yet.
     const parents = rows.map(tab => tree.getParent(tab));
-    const ancestors = rows.map(tab => new Set(tree.getAncestors(tab)));
+    const ancestry = rows.map(tab => {
+      const ancestors = tree.getAncestors(tab);
+      return { root: ancestors.at(-1) ?? tab, ancestors: new Set(ancestors) };
+    });
+    const colors = new Map();
     const lastChildren = new Map();
     const tracks = rows.map(() => []);
     const depth = tab => expanded
@@ -71,7 +94,7 @@
       const level = depth(rows[parent]);
       tracks[parent][level] |= 2;
       for (let row = parent + 1; row < last; row++) {
-        if (ancestors[row].has(rows[parent])) tracks[row][level] |= 3;
+        if (ancestry[row].ancestors.has(rows[parent])) tracks[row][level] |= 3;
       }
       tracks[last][level] |= 1;
     }
@@ -85,38 +108,54 @@
         const height = track === 3 ? "100%" : half;
         return `${ink} var(--textfox-tree-side) ${offset(level)} ${edge} 0 / 1px ${height} no-repeat`;
       });
-      if (!lines.length) continue;
       const parent = parents[index];
-      if (expanded && (indices.has(parent) || lastChildren.has(index))) {
+      if (expanded && lines.length && (indices.has(parent) || lastChildren.has(index))) {
         const anchor = indices.has(parent) ? parent : tab;
         const start = offset(depth(anchor));
         const width = `max(0px, calc(var(--textfox-tree-frame-start) - ${start}))`;
         lines.push(`${ink} var(--textfox-tree-side) ${start} top 50% / ${width} 1px no-repeat`);
       }
+      const { root } = ancestry[index];
+      if (!colors.has(root)) {
+        colors.set(root, root.hasAttribute("data-tree-has-children") ? getSavedTreeColor(root) : "");
+      }
+      const color = colors.get(root);
+      if (!lines.length && !color && !paintedTreeRows.has(tab)) continue;
       tab.style.setProperty("--textfox-tree-lines", lines.join(", "));
-      tab.setAttribute("textfox-tree-line", "");
-      nextPainted.add(tab);
+      tab.toggleAttribute("textfox-tree-line", lines.length > 0);
+      if (color) tab.setAttribute("textfox-tree-color", color);
+      else tab.removeAttribute("textfox-tree-color");
+      tab.toggleAttribute("textfox-tree-color-root", Boolean(color && tab === root));
+      if (lines.length || color) nextPainted.add(tab);
     }
     for (const tab of paintedTreeRows) {
       if (nextPainted.has(tab)) continue;
       tab.style.removeProperty("--textfox-tree-lines");
       tab.removeAttribute("textfox-tree-line");
+      tab.removeAttribute("textfox-tree-color");
+      tab.removeAttribute("textfox-tree-color-root");
     }
     paintedTreeRows = nextPainted;
   }
 
-  const treeObserver = new MutationObserver(() => {
+  function scheduleTreePaint() {
     if (!treeFrame) treeFrame = window.requestAnimationFrame(paintTreeLines);
-  });
+  }
+
+  const treeObserver = new MutationObserver(scheduleTreePaint);
   treeObserver.observe(tabs, {
     subtree: true,
     childList: true,
-    attributeFilter: ["expanded", "orient", "data-tree-level", "data-tree-parent", "data-tree-hidden",
+    attributeFilter: ["expanded", "orient", "data-tree-level", "data-tree-parent", "data-tree-hidden", "data-tree-has-children",
       "hidden", "collapsed", "closing"],
   });
-  treeFrame = window.requestAnimationFrame(paintTreeLines);
+  tabs.addEventListener("SSTabRestoring", scheduleTreePaint);
+  tabs.addEventListener("SSTabRestored", scheduleTreePaint);
+  scheduleTreePaint();
   window.addUnloadListener?.(() => {
     treeObserver.disconnect();
+    tabs.removeEventListener("SSTabRestoring", scheduleTreePaint);
+    tabs.removeEventListener("SSTabRestored", scheduleTreePaint);
     window.cancelAnimationFrame(treeFrame);
   });
 
@@ -233,6 +272,55 @@
   });
   attachPopup.addEventListener("popuphidden", event => {
     if (event.target === attachPopup) attachPopup.replaceChildren();
+  });
+
+  function getContextTreeRoot() {
+    const context = window.TabContextMenu;
+    const tab = context?.contextTab;
+    const drag = window.TreeTabsDnD;
+    if (!tab?.visible || tab.closing || tab.pinned || context.multiselected ||
+        !drag?._isEnabled?.(tabs)) return null;
+
+    const tree = browser.TreeTabsService;
+    const node = drag._getLogicalTab(tab);
+    const root = tree.getAncestors(node).at(-1) ?? node;
+    return tree.getChildren(root).length ? root : null;
+  }
+
+  const colorMenu = document.createXULElement("menu");
+  colorMenu.id = "textfox-tree-color-menu";
+  colorMenu.hidden = true;
+  colorMenu.setAttribute("label", portuguese ? "Cor da árvore" : "Tree Color");
+  const colorPopup = document.createXULElement("menupopup");
+  colorMenu.append(colorPopup);
+  moveMenu.after(colorMenu);
+
+  const colorItems = [...palette, ["", portuguese ? "Voltar ao padrão" : "Use Default"]]
+    .map(([color, label]) => {
+      const item = document.createXULElement("menuitem");
+      item.setAttribute("type", "radio");
+      item.setAttribute("name", "textfox-tree-color");
+      item.setAttribute("label", label);
+      item.setAttribute("value", color);
+      if (color) item.setAttribute("textfox-tree-color", color);
+      item.addEventListener("command", () => {
+        const root = getContextTreeRoot();
+        if (!root) return;
+        if (color) SessionStore.setCustomTabValue(root, treeColorKey, color);
+        else SessionStore.deleteCustomTabValue(root, treeColorKey);
+        scheduleTreePaint();
+      });
+      colorPopup.append(item);
+      return item;
+    });
+  colorPopup.addEventListener("popupshowing", event => {
+    if (event.target !== colorPopup) return;
+    const root = getContextTreeRoot();
+    const color = root ? getSavedTreeColor(root) : "";
+    for (const item of colorItems) item.checked = item.getAttribute("value") === color;
+  });
+  contextMenu.addEventListener("popupshowing", event => {
+    if (event.target === contextMenu) colorMenu.hidden = !getContextTreeRoot();
   });
 
   menu.addEventListener("popupshowing", event => {
