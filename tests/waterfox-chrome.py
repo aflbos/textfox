@@ -1066,6 +1066,24 @@ const openFor = (tab, multiselected = false) => {
   return [back.disabled, forward.disabled];
 };
 const move = item => item.dispatchEvent(new Event("command", { bubbles: true }));
+const pressMoveKey = direction => {
+  const input = Cc["@mozilla.org/text-input-processor;1"].createInstance(Ci.nsITextInputProcessor);
+  if (!input.beginInputTransactionForTests(window)) throw new Error("Keyboard unavailable");
+  const key = (name, code, keyCode) => new KeyboardEvent("keydown", { key: name, code, keyCode });
+  const ctrl = key("Control", "ControlLeft", 17);
+  const shift = key("Shift", "ShiftLeft", 16);
+  const page = direction < 0 ? key("PageUp", "PageUp", 33) : key("PageDown", "PageDown", 34);
+  const flags = Ci.nsITextInputProcessor.KEY_NON_PRINTABLE_KEY;
+  input.keydown(ctrl, flags);
+  input.keydown(shift, flags);
+  try {
+    input.keydown(page, flags);
+    input.keyup(page, flags);
+  } finally {
+    input.keyup(shift, flags);
+    input.keyup(ctrl, flags);
+  }
+};
 const vertical = arguments[0] === "vertical";
 const [root, child, sibling, otherRoot, pin, otherPin] = Array.from({ length: 6 }, () =>
   gBrowser.addTrustedTab("about:blank", { skipAnimation: true })
@@ -1099,14 +1117,32 @@ try {
     childrenReordered = keptBranch && childEdge[0] && !childEdge[1]
       && service.getChildren(root)[1] === child && child._tPos === sibling._tPos + 1;
   }
+  const menuKeptSelection = selected === gBrowser.selectedTab;
+  // Leave the context menu pointed at another tab to distinguish both entry points.
+  const active = vertical ? child : otherRoot;
+  openFor(root);
+  gBrowser.selectedTab = active;
+  gURLBar.focus();
+  const start = active._tPos;
+  const firstDirection = vertical ? -1 : 1;
+  pressMoveKey(firstDirection);
+  const moved = active._tPos === start + firstDirection;
+  pressMoveKey(firstDirection);
+  const stayedAtEdge = active._tPos === start + firstDirection;
+  pressMoveKey(-firstDirection);
+  const movedBack = active._tPos === start && active === gBrowser.selectedTab;
   return {
     pinnedEdge, pinsMoved, multiEdge, ordinaryEdge, tabLabel, reordered, childrenReordered,
-    selected: selected === gBrowser.selectedTab,
+    selected: menuKeptSelection,
+    shortcuts: [back.getAttribute("acceltext"), forward.getAttribute("acceltext")],
+    keyboard: moved && stayedAtEdge && movedBack
+      && (!vertical || gBrowser.TreeTabsService.getParent(active) === root),
     registered: back.parentNode === menu && forward.parentNode === menu,
   };
 } finally {
   context.contextTab = originalTab;
   context.multiselected = originalMultiselected;
+  gBrowser.selectedTab = selected;
   for (const tab of [child, sibling, root, otherRoot, pin, otherPin]) {
     gBrowser.removeTab(tab, { animate: false });
   }
@@ -1116,7 +1152,8 @@ try {
     assert state["pinnedEdge"] == [True, False] and state["pinsMoved"], state
     assert state["multiEdge"] == [True, True] and state["ordinaryEdge"] == [False, True], state
     assert state["reordered"] and state["childrenReordered"], state
-    print(f"PASS {orientation} move menu reorders the context tab and respects boundaries")
+    assert all(state["shortcuts"]) and state["keyboard"], state
+    print(f"PASS {orientation} menu and native keyboard shortcuts reorder the intended tab")
 
 
 def check_tree_reorder_keeps_root(execute):

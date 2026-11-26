@@ -9,6 +9,7 @@
   }
 
   const tabs = browser.tabContainer;
+  const { ShortcutUtils } = ChromeUtils.importESModule("resource://gre/modules/ShortcutUtils.sys.mjs");
   const portuguese = /^pt(?:-|$)/i.test(Services.locale.appLocaleAsBCP47);
   const labels = portuguese
     ? {
@@ -20,10 +21,8 @@
         ordered: ["Move One Position Back", "Move One Position Forward"],
       };
 
-  function getMove(direction) {
-    const context = window.TabContextMenu;
-    const tab = context?.contextTab;
-    if (!tab?.visible || tab.closing || context.multiselected) return null;
+  function getMove(tab, direction) {
+    if (!tab?.visible || tab.closing || tab.multiselected) return null;
 
     const tree = browser.TreeTabsService;
     const treeDrag = window.TreeTabsDnD;
@@ -56,10 +55,33 @@
     };
   }
 
+  function getContextMove(direction) {
+    const context = window.TabContextMenu;
+    return context?.multiselected ? null : getMove(context?.contextTab, direction);
+  }
+
   const items = [-1, 1].map((direction, index) => {
+    const backward = direction < 0;
     const item = document.createXULElement("menuitem");
-    item.id = direction < 0 ? "textfox-move-tab-back" : "textfox-move-tab-forward";
-    item.addEventListener("command", () => getMove(direction)?.());
+    item.id = backward ? "textfox-move-tab-back" : "textfox-move-tab-forward";
+    item.addEventListener("command", () => getContextMove(direction)?.());
+
+    // The browser already dispatches Ctrl+Shift+Page Up/Down to these methods.
+    const method = backward ? "moveTabBackward" : "moveTabForward";
+    const nativeMove = browser[method];
+    if (typeof nativeMove === "function") {
+      const moveSelected = () => getMove(browser.selectedTab, direction)?.();
+      browser[method] = moveSelected;
+      window.addUnloadListener?.(() => {
+        if (browser[method] === moveSelected) browser[method] = nativeMove;
+      });
+
+      const key = document.createXULElement("key");
+      key.setAttribute("modifiers", "control,shift");
+      key.setAttribute("keycode", backward ? "VK_PAGE_UP" : "VK_PAGE_DOWN");
+      item.setAttribute("acceltext", ShortcutUtils.prettifyShortcut(key));
+    }
+
     firstNativeItem.before(item);
     return { item, index, direction };
   });
@@ -71,7 +93,7 @@
     const wording = tabs.verticalMode && !grid ? labels.vertical : labels.ordered;
     for (const { item, index, direction } of items) {
       item.setAttribute("label", wording[index]);
-      item.disabled = !getMove(direction);
+      item.disabled = !getContextMove(direction);
     }
   });
 })();

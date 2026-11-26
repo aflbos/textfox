@@ -56,6 +56,8 @@ _a firefox theme for the tui enthusiast_
 >   Para mover sem arrastar, clique com o botão direito na aba e abra **Mover
 >   aba**. Os comandos de uma posição movem a aba entre suas irmãs e levam
 >   junto as filhas, quando houver. Nas fixadas, seguem a ordem da grade.
+>   Na aba ativa, use **Ctrl+Shift+Page Up** ou **Ctrl+Shift+Page Down** para
+>   mover uma posição na mesma ordem.
 >   Este indicador usa um script local e requer que o Sine permita JavaScript
 >   dos mods locais (`sine.allow-unsafe-js`). A instalação mantém essa
 >   preferência do navegador.
