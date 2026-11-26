@@ -4,10 +4,7 @@
   const browser = window.gBrowser;
   const contextMenu = document.getElementById("tabContextMenu");
   const moveMenu = document.getElementById("context_moveTabOptions");
-  const menu = document.getElementById("moveTabOptionsMenu");
-  const firstNativeItem = document.getElementById("context_moveToStart");
-  if (!browser || !contextMenu || !moveMenu || !menu || !firstNativeItem ||
-      document.getElementById("textfox-move-tab-back")) {
+  if (!browser || !contextMenu || !moveMenu || document.getElementById("textfox-organize-tab")) {
     return;
   }
 
@@ -219,6 +216,15 @@
     );
   }
 
+  const organizeMenu = document.createXULElement("menu");
+  organizeMenu.id = "textfox-organize-tab";
+  organizeMenu.hidden = true;
+  organizeMenu.setAttribute("label", portuguese ? "Organizar aba" : "Organize Tab");
+  const menu = document.createXULElement("menupopup");
+  menu.id = "textfox-organize-tab-popup";
+  organizeMenu.append(menu);
+  moveMenu.after(organizeMenu);
+
   const items = [-1, 1].map((direction, index) => {
     const backward = direction < 0;
     const item = document.createXULElement("menuitem");
@@ -241,7 +247,7 @@
       item.setAttribute("acceltext", ShortcutUtils.prettifyShortcut(key));
     }
 
-    firstNativeItem.before(item);
+    menu.append(item);
     return { item, index, direction };
   });
 
@@ -251,7 +257,7 @@
   attachMenu.setAttribute("label", portuguese ? "Tornar filha de" : "Make Child of");
   const attachPopup = document.createXULElement("menupopup");
   attachMenu.append(attachPopup);
-  firstNativeItem.before(attachMenu);
+  menu.append(attachMenu);
 
   attachPopup.addEventListener("popupshowing", event => {
     if (event.target !== attachPopup) return;
@@ -293,7 +299,7 @@
   colorMenu.setAttribute("label", portuguese ? "Cor da árvore" : "Tree Color");
   const colorPopup = document.createXULElement("menupopup");
   colorMenu.append(colorPopup);
-  moveMenu.after(colorMenu);
+  menu.append(colorMenu);
 
   const colorItems = [...palette, ["", portuguese ? "Voltar ao padrão" : "Use Default"]]
     .map(([color, label]) => {
@@ -320,7 +326,10 @@
     for (const item of colorItems) item.checked = item.getAttribute("value") === color;
   });
   contextMenu.addEventListener("popupshowing", event => {
-    if (event.target === contextMenu) colorMenu.hidden = !getContextTreeRoot();
+    if (event.target !== contextMenu) return;
+    const context = window.TabContextMenu;
+    organizeMenu.hidden = !context?.contextTab?.visible || context.contextTab.closing ||
+      context.multiselected;
   });
 
   menu.addEventListener("popupshowing", event => {
@@ -334,5 +343,6 @@
     }
     attachMenu.hidden = !window.TreeTabsDnD?._isEnabled?.(tabs);
     attachMenu.disabled = !getParentChoices().length;
+    colorMenu.hidden = !getContextTreeRoot();
   });
 })();

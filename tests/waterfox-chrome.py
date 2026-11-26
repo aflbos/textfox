@@ -1125,11 +1125,11 @@ const selected = gBrowser.selectedTab;
 const context = window.TabContextMenu;
 const originalTab = context.contextTab;
 const originalMultiselected = context.multiselected;
-const menu = document.getElementById("moveTabOptionsMenu");
+const menu = document.getElementById("textfox-organize-tab-popup");
 const back = document.getElementById("textfox-move-tab-back");
 const forward = document.getElementById("textfox-move-tab-forward");
 const attach = document.getElementById("textfox-attach-tab");
-const attachPopup = attach.firstElementChild;
+const attachPopup = attach.querySelector("menupopup");
 const openFor = (tab, multiselected = false) => {
   context.contextTab = tab;
   context.multiselected = multiselected;
@@ -1227,7 +1227,10 @@ try {
     keyboard: moved && stayedAtEdge && movedBack
       && (!vertical || gBrowser.TreeTabsService.getParent(active) === root),
     attachment,
-    registered: back.parentNode === menu && forward.parentNode === menu,
+    registered: [back.id, forward.id, attach.id, "textfox-tree-color-menu"].every(
+      (id, index) => menu.querySelectorAll(":scope > menuitem, :scope > menu")[index]?.id === id
+    ) && menu.parentNode.parentNode.id === "tabContextMenu"
+      && !document.getElementById("moveTabOptionsMenu").querySelector("[id^=textfox-]"),
   };
 } finally {
   context.contextTab = originalTab;
@@ -1253,7 +1256,7 @@ return (async () => {
   const tree = gBrowser.TreeTabsService;
   const context = window.TabContextMenu;
   const menu = document.getElementById("textfox-tree-color-menu");
-  const popup = menu.firstElementChild;
+  const popup = menu.querySelector("menupopup");
   const controller = window.SidebarController;
   const wasExpanded = controller.sidebarMain.expanded;
   const oldContextTab = context.contextTab;
@@ -1289,7 +1292,7 @@ return (async () => {
     const initial = [colorOf(root), colorOf(first), colorOf(secondRoot), colorOf(secondChild)];
     const applied = guide(root) === guide(first) && guide(root) !== guide(secondRoot)
       && marker(root) === guide(root) && !first.hasAttribute("textfox-tree-color-root");
-    const menuState = menu.parentNode.id === "tabContextMenu" && option("blue").checked
+    const menuState = menu.parentNode.id === "textfox-organize-tab-popup" && option("blue").checked
       && !option("orange").checked;
     const saved = SessionStore.getCustomTabValue(root, key) === "blue"
       && !SessionStore.getCustomTabValue(first, key);
