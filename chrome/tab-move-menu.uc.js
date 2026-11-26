@@ -9,6 +9,7 @@
   }
 
   const tabs = browser.tabContainer;
+  tabs.setAttribute("textfox-tree-disclosure", "");
   const { ShortcutUtils } = ChromeUtils.importESModule("resource://gre/modules/ShortcutUtils.sys.mjs");
   const portuguese = /^pt(?:-|$)/i.test(Services.locale.appLocaleAsBCP47);
   const labels = portuguese
@@ -20,6 +21,23 @@
         vertical: ["Move One Position Up", "Move One Position Down"],
         ordered: ["Move One Position Back", "Move One Position Forward"],
       };
+
+  // Waterfox's disclosure button only handles input with the sidebar expanded.
+  function handleCollapsedDisclosure(event) {
+    if (event.button !== 0 || tabs.hasAttribute("expanded") ||
+        !window.TreeTabsDnD?._isEnabled?.(tabs)) return;
+    const button = event.target?.closest(".tab-tree-disclosure:not([hidden])");
+    const tab = button?.closest(".tabbrowser-tab[data-tree-has-children]");
+    if (!tab || tab.closing || tab.pinned) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.type === "click") browser.TreeTabsService.toggleCollapsed(tab);
+  }
+
+  for (const type of ["mousedown", "click", "dblclick"]) {
+    tabs.addEventListener(type, handleCollapsedDisclosure, { capture: true });
+  }
 
   function getMove(tab, direction) {
     if (!tab?.visible || tab.closing || tab.multiselected) return null;

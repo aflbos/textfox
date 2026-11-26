@@ -36,6 +36,18 @@
       !dragged._dragData?.fromTabList && dragAndDrop?.getDropEffectForTabDrag(event) === "move";
   }
 
+  function getShiftDraggedTab(event) {
+    const transfer = event.dataTransfer;
+    if (!event.shiftKey || !transfer?.mozItemCount || transfer.mozTypesAt(0)[0] !== tabType) {
+      return null;
+    }
+    const dragged = transfer.mozGetDataAt(tabType, 0);
+    const sourceTree = dragged?.ownerDocument?.defaultView?.TreeTabsDnD;
+    return dragged?.classList.contains("tabbrowser-tab") && sourceTree?._isEnabled?.(dragged.container)
+      ? dragged
+      : null;
+  }
+
   function getAttachTarget(container, event, dragged, ...args) {
     const target = nativeAttachTarget.call(this, container, event, dragged, ...args);
     if (!target || !isLocalMove(container, event, dragged)) return target;
@@ -44,14 +56,15 @@
     const child = this._getLogicalTab(dragged);
     const service = window.gBrowser.TreeTabsService;
     const state = service._getStateForTab?.(child)?.state;
-    return child.group === target.group &&
+    return child.group === target.group && service.getParent(child) !== target &&
       !(state && service._wouldExceedMaxDepth?.(state, target, child)) ? target : null;
   }
 
   function placementBetween(service, previous, next, dragged, event, movingSet) {
+    const local = event && isLocalMove(tabs, event, dragged);
+    if (local && event.shiftKey) return null;
     const placement = nativePlacementBetween.call(this, service, previous, next, dragged, event, movingSet);
-    if (!placement?.parent || !event || !isLocalMove(tabs, event, dragged) ||
-        placement.parent === service.getParent(this._getLogicalTab(dragged))) {
+    if (!local || !placement?.parent || placement.parent === service.getParent(this._getLogicalTab(dragged))) {
       return placement;
     }
 
@@ -185,6 +198,7 @@
     // Use the index computed by the browser after its own dragover handler,
     // and keep the native indicator for copies, links and cross-window drops.
     hide();
+    if (getShiftDraggedTab(event)) return;
     const transfer = event.dataTransfer;
     const dragged = transfer?.mozItemCount ? transfer.mozGetDataAt(tabType, 0) : null;
     if (!event.defaultPrevented || dragged?.ownerDocument !== document ||
@@ -193,8 +207,6 @@
     }
     let afterBranch;
     if (treeDnD?._isEnabled?.(tabs) && !dragged.pinned && isLocalMove(tabs, event, dragged)) {
-      // Waterfox already highlights the parent for an explicit attachment.
-      if (treeDnD.getAttachTarget(tabs, event, dragged)) return;
       const placement = treeDnD._previewDropPlacement?.(event, dragged);
       if (rootPlacements.has(placement)) {
         const service = window.gBrowser.TreeTabsService;
@@ -212,8 +224,23 @@
       hide();
     }
   }, { signal });
-  window.addEventListener("dragend", hide, { capture: true, signal });
-  window.addEventListener("drop", hide, { capture: true, signal });
+  window.addEventListener("dragend", event => {
+    hide();
+    // Let Gecko clean up its drag visuals without detaching on a rejected Shift drop.
+    if (getShiftDraggedTab(event) && event.dataTransfer.dropEffect === "none") {
+      event.dataTransfer.dropEffect = "move";
+    }
+  }, { capture: true, signal });
+  window.addEventListener("drop", event => {
+    hide();
+    const dragged = getShiftDraggedTab(event);
+    if (!dragged || (tabs.contains(event.target) && isLocalMove(tabs, event, dragged) &&
+        treeDnD.getAttachTarget(tabs, event, dragged))) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    event.dataTransfer.dropEffect = "move";
+  }, { capture: true, signal });
   window.addEventListener("blur", hide, { signal });
   window.addUnloadListener?.(() => {
     hide();

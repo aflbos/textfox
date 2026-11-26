@@ -1181,6 +1181,85 @@ try {
     print(f"PASS {orientation} menu and native keyboard shortcuts reorder the intended tab")
 
 
+def check_shift_drop_requires_parent(execute):
+    state = execute("""
+return (async () => {
+const source = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
+const target = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
+const transfer = new DataTransfer();
+const eventAt = (type, tab, fraction, shiftKey = true) => {
+  const row = window.TreeTabsDnD._getRowBounds(tab);
+  const x = Math.round(tab.getBoundingClientRect().left + 10);
+  const y = Math.round(row.top + row.height * fraction);
+  return new DragEvent(type, {
+    bubbles: true, cancelable: true, dataTransfer: transfer, shiftKey, clientX: x, clientY: y,
+    screenX: window.mozInnerScreenX + x, screenY: window.mozInnerScreenY + y,
+  });
+};
+try {
+  const original = source._tPos;
+  source.dispatchEvent(eventAt("dragstart", source, 0.5, false));
+  transfer.dropEffect = "move";
+  target.dispatchEvent(eventAt("dragover", target, 0.9));
+  await new Promise(resolve => requestAnimationFrame(resolve));
+  const lineHidden = document.getElementById("textfox-tab-drop-position").hidden;
+  const drop = eventAt("drop", target, 0.9);
+  target.dispatchEvent(drop);
+  const canceled = drop.defaultPrevented && source._tPos === original
+    && !gBrowser.TreeTabsService.getParent(source);
+  transfer.dropEffect = "none";
+  source.dispatchEvent(eventAt("dragend", source, 0.5));
+  return [lineHidden, canceled, !source._dragData, source.isConnected];
+} finally {
+  gBrowser.removeTab(source, { animate: false });
+  gBrowser.removeTab(target, { animate: false });
+}
+})();
+""")
+    assert state == [True, True, True, True], state
+    print("PASS Shift drop outside the attachment zone cancels without moving the tab")
+
+
+def check_collapsed_tree_cues(execute):
+    execute((ROOT / "chrome/tab-move-menu.uc.js").read_text(encoding="utf-8"))
+    state = execute("""
+const controller = window.SidebarController;
+const tabs = gBrowser.tabContainer;
+const wasExpanded = controller.sidebarMain.expanded;
+if (wasExpanded) controller.handleToolbarButtonClick();
+const [root, child, grandchild, plain] = Array.from({ length: 4 }, () =>
+  gBrowser.addTrustedTab("about:blank", { skipAnimation: true })
+);
+const service = gBrowser.TreeTabsService;
+try {
+  service.attachTab(child, root);
+  service.attachTab(grandchild, child);
+  const arrow = root.querySelector(".tab-tree-disclosure");
+  const guide = tab => getComputedStyle(tab.querySelector(".tab-stack"), "::before");
+  const counter = root.querySelector(".tab-content");
+  const showTree = [getComputedStyle(arrow).display, arrow.getAttribute("aria-expanded"),
+    guide(child).borderInlineStartWidth, guide(child).insetInlineStart,
+    guide(grandchild).insetInlineStart, guide(plain).content];
+
+  arrow.click();
+  const collapsed = [arrow.getAttribute("aria-expanded"), child.hasAttribute("data-tree-hidden"),
+    counter.getAttribute("data-tree-counter"), getComputedStyle(counter, "::before").content];
+  arrow.click();
+  return {
+    showTree, collapsed, worksInRail: !tabs.hasAttribute("expanded") &&
+      arrow.getAttribute("aria-expanded") === "true" && !child.hasAttribute("data-tree-hidden"),
+  };
+} finally {
+  for (const tab of [grandchild, child, root, plain]) gBrowser.removeTab(tab, { animate: false });
+  if (wasExpanded) controller.handleToolbarButtonClick();
+}
+""")
+    assert state["showTree"] == ["block", "true", "1px", "2px", "4px", "none"], state
+    assert state["collapsed"] == ["false", True, "2", "attr(data-tree-counter)"], state
+    assert state["worksInRail"], state
+    print("PASS collapsed sidebar shows tree levels and counts and can toggle a branch")
+
+
 def check_tree_reorder_keeps_root(execute):
     execute("""
 const [source, root, child, last, next] = Array.from({ length: 5 }, () =>
@@ -1356,6 +1435,7 @@ def main():
         check_colors(execute)
         check_sidebar(execute)
         check_collapsed_tab_frames(execute)
+        check_collapsed_tree_cues(execute)
         check_sine_area_titles(execute, vertical=True)
         check_sine_tree_guides(execute)
         check_sine_area_colors(execute)
@@ -1365,6 +1445,7 @@ def main():
         check_waterfox_appearance(execute, "vertical")
         check_frame_spacing(execute)
         check_tab_drop_position(execute, "vertical")
+        check_shift_drop_requires_parent(execute)
         check_tree_reorder_keeps_root(execute)
         check_compact_frame_titles(execute, vertical=True)
         check_expanded_pinned_grid(execute)

@@ -102,6 +102,73 @@
   }
 }
 
+/* The icon rail has no room for indentation. Keep the tree cues in its gutters. */
+#vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[orient="vertical"]:not([expanded]) {
+  .tabbrowser-tab[data-tree-parent] > .tab-stack::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 6px;
+    inset-block-start: 0;
+    inline-size: 6px;
+    block-size: 50%;
+    border-inline-start: 1px solid var(--tf-accent);
+    border-block-end: 1px solid var(--tf-accent);
+    pointer-events: none;
+  }
+
+  .tabbrowser-tab[data-tree-parent][data-tree-level="1"] > .tab-stack::before {
+    inset-inline-start: 2px;
+  }
+
+  .tabbrowser-tab[data-tree-parent][data-tree-level="2"] > .tab-stack::before {
+    inset-inline-start: 4px;
+  }
+
+  .tabbrowser-tab[data-tree-has-children] > .tab-tree-disclosure:not([hidden]) {
+    appearance: none;
+    display: block;
+    position: absolute;
+    z-index: 2;
+    inset-inline-end: 0;
+    inset-block: 0;
+    inline-size: 12px;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: var(--focus-outline);
+      outline-offset: -2px;
+    }
+  }
+
+  &:not([textfox-tree-disclosure]) .tab-tree-disclosure {
+    pointer-events: none;
+  }
+
+  .tabbrowser-tab[data-tree-collapsed] .tab-content[data-tree-counter]:not([data-tree-counter="0"])::before {
+    content: attr(data-tree-counter);
+    position: absolute;
+    z-index: 1;
+    inset-inline-start: 1px;
+    inset-block-end: 0;
+    min-inline-size: 1em;
+    padding-inline: 2px;
+    background: var(--tf-bg);
+    border: 1px solid var(--tf-border);
+    border-radius: var(--tf-rounding);
+    color: inherit;
+    font-size: 10px;
+    line-height: 1;
+    text-align: center;
+    pointer-events: none;
+  }
+}
+
 /* An outline distinguishes a child drop from insertion between rows. */
 #vertical-tabs[tree-tabs-enabled] .tabbrowser-tab[data-tree-drop-target="child"] {
   outline: 2px dashed var(--focus-outline-color, var(--tf-accent)) !important;

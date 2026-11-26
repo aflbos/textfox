@@ -52,6 +52,7 @@ _a firefox theme for the tui enthusiast_
 >   Ao reordenar abas na mesma janela, o Textfox mostra uma linha no destino.
 >   Nas abas em árvore, arraste normalmente para reordenar. Para soltar como
 >   filha, segure Shift sobre o centro da aba de destino até aparecer um contorno.
+>   Com Shift pressionado, soltar fora de um destino válido cancela o movimento.
 >   Também é possível vincular uma aba existente em **Mover aba → Tornar filha de**.
 >   Na grade de fixadas, a linha acompanha a posição entre blocos e fileiras.
 >   Para mover sem arrastar, clique com o botão direito na aba e abra **Mover
@@ -59,7 +60,8 @@ _a firefox theme for the tui enthusiast_
 >   junto as filhas, quando houver. Nas fixadas, seguem a ordem da grade.
 >   Na aba ativa, use **Ctrl+Shift+Page Up** ou **Ctrl+Shift+Page Down** para
 >   mover uma posição na mesma ordem.
->   Este indicador usa um script local e requer que o Sine permita JavaScript
+>   Os atalhos, os comandos do menu e a interação com as setas da árvore
+>   usam scripts locais e requerem que o Sine permita JavaScript
 >   dos mods locais (`sine.allow-unsafe-js`). A instalação mantém essa
 >   preferência do navegador.
 >   A grade de abas fixadas também usa um script local para escolher favicons
@@ -76,6 +78,9 @@ _a firefox theme for the tui enthusiast_
 >   Com as abas em árvore e a lateral expandida, as guias podem seguir o
 >   Waterfox, usar a cor de destaque do Textfox ou ficar ocultas. Os títulos
 >   podem ser ocultados por área, e a opção geral continua ocultando todos.
+>   Com a barra retraída, as setas mostram quais abas têm filhas, as guias
+>   marcam as filhas visíveis e o número indica quantas estão recolhidas.
+>   Clique na seta para abrir ou recolher o ramo pela própria barra retraída.
 >   Em **Cores por área**, menus de contexto, barra lateral e barra de status
 >   podem usar o padrão do Textfox, cores neutras ou as cores do tema ativo.
 >   Com o Adaptive Tab Bar Colour, as duas primeiras áreas usam suas cores
