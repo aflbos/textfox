@@ -800,16 +800,25 @@ const nested = grandchild.getBoundingClientRect();
 const track = Math.floor(root.left + parseFloat(rootLine.backgroundPositionX));
 const canvas = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
 canvas.width = 7;
-canvas.height = 1;
 const ctx = canvas.getContext("2d");
-ctx.drawWindow(window, track - 2, Math.floor(nested.top) + 5, 7, 1, "transparent", 1);
-const pixels = ctx.getImageData(0, 0, 7, 1).data;
-const background = pixels[0];
+const measure = (start, height) => {
+  canvas.height = height;
+  ctx.drawWindow(window, track - 2, start, 7, height, "transparent", 1);
+  const pixels = ctx.getImageData(0, 0, 7, height).data;
+  return Math.min(...Array.from({ length: height }, (_, row) => {
+    const offset = row * 28;
+    return Math.max(...[1, 2, 3, 4].map(x => Math.abs(pixels[offset + x * 4] - pixels[offset])));
+  }));
+};
+const frame = parent.querySelector(".tab-background").getBoundingClientRect();
+const frameEdge = Math.round(frame.bottom) - 1;
+const nextRow = Math.floor(child.getBoundingClientRect().top);
 return {
   color: rootLine.color, content: rootLine.content,
   indent: getComputedStyle(child).marginInlineStart,
   nestedTracks: nestedLine.backgroundImage.split("linear-gradient").length - 1,
-  paintedTrack: Math.max(...[1, 2, 3, 4].map(x => Math.abs(pixels[x * 4] - background))),
+  paintedTrack: measure(Math.floor(nested.top) + 5, 1),
+  paintedJoin: measure(frameEdge, Math.max(1, nextRow - frameEdge + 3)),
 };
 """
     try:
@@ -818,7 +827,7 @@ return {
             lambda style: style["indent"] != "0px" and style["paintedTrack"] >= 35,
             "expanded guide paints through the gutter of a nested tab",
         )
-        assert neutral["nestedTracks"] == 3, neutral
+        assert neutral["nestedTracks"] == 3 and neutral["paintedJoin"] >= 25, neutral
         execute('Services.prefs.setStringPref("textfox.sine.treeGuides", "accent");')
         accent = wait_for(
             lambda: execute(read), lambda style: style["color"] != neutral["color"],

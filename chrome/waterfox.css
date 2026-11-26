@@ -110,7 +110,7 @@
   }
 
   &[expanded] {
-    --textfox-tree-guide-color: color-mix(in srgb, currentColor 55%, transparent);
+    --textfox-tree-guide-color: color-mix(in srgb, currentColor 55%, var(--tf-sidebar-background));
     --textfox-tree-track-step: var(--tree-indent-unit);
     --textfox-tree-track-start: calc(var(--tab-inline-padding) + var(--tree-twisty-size) / 2);
 
@@ -126,7 +126,9 @@
       }
 
       &::before {
-        /* Draw the ancestor tracks in the space before this indented row. */
+        /* Keep the track above the frame and overlap neighboring rows. */
+        z-index: 1;
+        inset-block: -1px;
         inset-inline-start: calc(0px - var(--textfox-tree-row-indent));
       }
     }

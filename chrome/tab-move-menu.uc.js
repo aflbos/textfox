@@ -75,7 +75,8 @@
       const lines = tracks[index].flatMap((track, level) => {
         if (!track) return [];
         const edge = track === 2 ? "bottom" : "top";
-        const height = track === 3 ? "100%" : "50%";
+        const half = !expanded ? "50%" : track === 2 ? "calc(50% - 5px)" : "calc(50% + 0.5px)";
+        const height = track === 3 ? "100%" : half;
         return `${ink} var(--textfox-tree-side) ${offset(level)} ${edge} 0 / 1px ${height} no-repeat`;
       });
       if (!lines.length) continue;
@@ -83,7 +84,7 @@
       if (expanded && parent) {
         const start = offset(depth(parent));
         const width = `max(0px, calc(var(--textfox-tree-frame-start) - ${start}))`;
-        lines.push(`${ink} var(--textfox-tree-side) ${start} top calc(50% - 0.5px) / ${width} 1px no-repeat`);
+        lines.push(`${ink} var(--textfox-tree-side) ${start} top 50% / ${width} 1px no-repeat`);
       }
       tab.style.setProperty("--textfox-tree-lines", lines.join(", "));
       tab.setAttribute("textfox-tree-line", "");
