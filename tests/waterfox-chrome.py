@@ -783,32 +783,76 @@ def check_sine_tree_guides(execute):
     assert execute("""
 const { TreeTabsService } = ChromeUtils.importESModule("resource:///modules/TreeTabsService.sys.mjs");
 const parent = gBrowser.selectedTab;
-const child = gBrowser.addTrustedTab("about:blank", { skipAnimation: true });
-child.id = "textfox-guide-test-child";
-return TreeTabsService.attachTab(child, parent);
+const [child, grandchild, sibling] = Array.from({ length: 3 }, () =>
+  gBrowser.addTrustedTab("about:blank", { skipAnimation: true })
+);
+window.textfoxExpandedGuides = { parent, child, grandchild, sibling };
+return TreeTabsService.attachTab(child, parent) && TreeTabsService.attachTab(grandchild, child)
+  && TreeTabsService.attachTab(sibling, parent);
 """)
     read = """
-const child = document.getElementById("textfox-guide-test-child");
-if (child.dataset.treeLevel !== "1") return null;
-const css = getComputedStyle(child);
-return [css.borderInlineStartColor, css.borderInlineStartWidth, css.marginInlineStart];
+const { parent, child, grandchild } = window.textfoxExpandedGuides;
+if (!grandchild.hasAttribute("textfox-tree-line")) return null;
+const rootLine = getComputedStyle(parent, "::before");
+const nestedLine = getComputedStyle(grandchild, "::before");
+const root = parent.getBoundingClientRect();
+const nested = grandchild.getBoundingClientRect();
+const track = Math.floor(root.left + parseFloat(rootLine.backgroundPositionX));
+const canvas = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
+canvas.width = 7;
+canvas.height = 1;
+const ctx = canvas.getContext("2d");
+ctx.drawWindow(window, track - 2, Math.floor(nested.top) + 5, 7, 1, "transparent", 1);
+const pixels = ctx.getImageData(0, 0, 7, 1).data;
+const background = pixels[0];
+return {
+  color: rootLine.color, content: rootLine.content,
+  indent: getComputedStyle(child).marginInlineStart,
+  nestedTracks: nestedLine.backgroundImage.split("linear-gradient").length - 1,
+  paintedTrack: Math.max(...[1, 2, 3, 4].map(x => Math.abs(pixels[x * 4] - background))),
+};
 """
-    native = wait_for(lambda: execute(read), lambda style: style[2] != "0px", "Waterfox tree indentation")
-    execute('Services.prefs.setStringPref("textfox.sine.treeGuides", "accent");')
-    accent = wait_for(lambda: execute(read), lambda style: style[1] == "1px" and style[0] != native[0], "Textfox tree guide")
-    assert accent[2] == native[2], (accent, native)
-    execute('Services.prefs.setStringPref("textfox.sine.treeGuides", "hidden");')
-    hidden = wait_for(lambda: execute(read), lambda style: style[0] == "rgba(0, 0, 0, 0)", "hidden tree guide")
-    assert hidden[2] == native[2], (hidden, native)
-    execute(toggle)
-    wait_for(lambda: execute(expanded), lambda value: not value, "collapsed vertical tabs")
-    collapsed = execute(read)
-    assert collapsed[0] != hidden[0], collapsed
-    execute("""
+    try:
+        neutral = wait_for(
+            lambda: execute(read),
+            lambda style: style["indent"] != "0px" and style["paintedTrack"] >= 35,
+            "expanded guide paints through the gutter of a nested tab",
+        )
+        assert neutral["nestedTracks"] == 3, neutral
+        execute('Services.prefs.setStringPref("textfox.sine.treeGuides", "accent");')
+        accent = wait_for(
+            lambda: execute(read), lambda style: style["color"] != neutral["color"],
+            "accented continuous guide",
+        )
+        assert accent["indent"] == neutral["indent"] and accent["paintedTrack"] >= 35, accent
+        execute('Services.prefs.setIntPref("browser.tabs.verticalTabs.tree.indentPx", 24);')
+        wider = wait_for(
+            lambda: execute(read),
+            lambda style: style["indent"] == "24px" and style["paintedTrack"] >= 35,
+            "guides follow a changed native indent",
+        )
+        assert wider["nestedTracks"] == neutral["nestedTracks"], wider
+        execute('Services.prefs.setStringPref("textfox.sine.treeGuides", "hidden");')
+        hidden = wait_for(
+            lambda: execute(read), lambda style: style["content"] == "none",
+            "hidden expanded guide",
+        )
+        assert hidden["indent"] == wider["indent"], hidden
+        execute(toggle)
+        wait_for(lambda: execute(expanded), lambda value: not value, "collapsed vertical tabs")
+        wait_for(
+            lambda: execute(read), lambda style: style["content"] != "none",
+            "expanded-only preference leaves the collapsed guides visible",
+        )
+    finally:
+        execute("""
 Services.prefs.clearUserPref("textfox.sine.treeGuides");
-gBrowser.removeTab(document.getElementById("textfox-guide-test-child"), { animate: false });
+Services.prefs.clearUserPref("browser.tabs.verticalTabs.tree.indentPx");
+const { child, grandchild, sibling } = window.textfoxExpandedGuides;
+for (const tab of [grandchild, child, sibling]) gBrowser.removeTab(tab, { animate: false });
+delete window.textfoxExpandedGuides;
 """)
-    print("PASS native, accented and hidden hierarchy guides on a real child tab")
+    print("PASS expanded continuous guides follow native indentation and Sine appearance options")
 
 
 def check_sine_area_colors(execute):

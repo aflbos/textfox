@@ -82,7 +82,7 @@
     "defaultValue": "browser",
     "placeholder": false,
     "options": [
-      { "label": "Padrão do Waterfox", "value": "browser" },
+      { "label": "Guias neutras", "value": "browser" },
       { "label": "Usar a cor de destaque do Textfox", "value": "accent" },
       { "label": "Ocultar guias", "value": "hidden" }
     ]

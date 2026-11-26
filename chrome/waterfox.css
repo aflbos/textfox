@@ -86,12 +86,60 @@
 
 /* ── Abas em árvore (browser.tabs.verticalTabs.tree.enabled) ───────────── */
 
-/* Use the native indent as the anchor. Some Waterfox styles suppress the
-   default border, so the accent option sets its width and style as well. */
+#vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[orient="vertical"] {
+  --textfox-tree-track-start: 2px;
+  --textfox-tree-track-step: 2px;
+  /* Adaptive themes can supply an accent identical to the rail background. */
+  --textfox-tree-guide-color: color-mix(in srgb, currentColor 75%, var(--tf-accent));
+
+  .tabbrowser-tab[textfox-tree-line] {
+    --textfox-tree-side: left;
+
+    &:dir(rtl) {
+      --textfox-tree-side: right;
+    }
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--textfox-tree-lines);
+      color: var(--textfox-tree-guide-color);
+      pointer-events: none;
+    }
+  }
+
+  &[expanded] {
+    --textfox-tree-guide-color: color-mix(in srgb, currentColor 55%, transparent);
+    --textfox-tree-track-step: var(--tree-indent-unit);
+    --textfox-tree-track-start: calc(var(--tab-inline-padding) + var(--tree-twisty-size) / 2);
+
+    .tabbrowser-tab[textfox-tree-line] {
+      --textfox-tree-row-indent: calc(var(--tree-indent-unit) * var(--tree-level, 0));
+      --textfox-tree-frame-margin: var(--tab-inner-inline-margin);
+      --textfox-tree-frame-start: calc(var(--textfox-tree-row-indent) + var(--textfox-tree-frame-margin));
+      border-inline-start-color: transparent !important;
+      overflow-clip-margin: calc(var(--textfox-tree-row-indent) + 2px) !important;
+
+      &[data-tree-parent]:not([data-tree-has-children], tab-split-view-wrapper > *) {
+        --textfox-tree-frame-margin: calc(var(--tab-inner-inline-margin) + var(--tree-twisty-size) + var(--tree-twisty-gap));
+      }
+
+      &::before {
+        /* Draw the ancestor tracks in the space before this indented row. */
+        inset-inline-start: calc(0px - var(--textfox-tree-row-indent));
+      }
+    }
+  }
+}
+
 @media -moz-pref("textfox.sine.treeGuides", "accent") and (not (forced-colors)) {
-  #vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[expanded]
-    .tabbrowser-tab[data-tree-level]:not([data-tree-level="0"]) {
-    border-inline-start: 1px solid color-mix(in srgb, var(--tf-accent) 45%, transparent) !important;
+  #vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[orient="vertical"][expanded] {
+    --textfox-tree-guide-color: color-mix(in srgb, currentColor 60%, var(--tf-accent));
+
+    .tabbrowser-tab[data-tree-parent]:not([textfox-tree-line]) {
+      border-inline-start: 1px solid color-mix(in srgb, var(--tf-accent) 45%, transparent) !important;
+    }
   }
 }
 
@@ -100,13 +148,15 @@
     .tabbrowser-tab[data-tree-level]:not([data-tree-level="0"]) {
     border-inline-start-color: transparent !important;
   }
+
+  #vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[orient="vertical"][expanded]
+    .tabbrowser-tab[textfox-tree-line]::before {
+    content: none;
+  }
 }
 
 /* The icon rail has no room for indentation. Keep the tree cues in its gutters. */
 #vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[orient="vertical"]:not([expanded]) {
-  /* Adaptive themes can supply an accent identical to the rail background. */
-  --textfox-tree-guide-color: color-mix(in srgb, currentColor 75%, var(--tf-accent));
-
   .tabbrowser-tab[data-tree-parent] {
     --textfox-tree-elbow-start: 6px;
 
@@ -131,27 +181,10 @@
     pointer-events: none;
   }
 
-  .tabbrowser-tab[textfox-tree-line] {
-    --textfox-tree-side: left;
-
-    &:dir(rtl) {
-      --textfox-tree-side: right;
-    }
-
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: var(--textfox-tree-lines);
-      color: var(--textfox-tree-guide-color);
-      pointer-events: none;
-    }
-
-    > .tab-stack::before {
-      inset-block-start: 50%;
-      block-size: 0;
-      border-inline-start: none;
-    }
+  .tabbrowser-tab[textfox-tree-line] > .tab-stack::before {
+    inset-block-start: 50%;
+    block-size: 0;
+    border-inline-start: none;
   }
 
   .tabbrowser-tab[data-tree-has-children] > .tab-tree-disclosure:not([hidden]) {

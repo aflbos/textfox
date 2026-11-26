@@ -44,35 +44,47 @@
 
   function paintTreeLines() {
     treeFrame = 0;
-    const rows = tabs.hasAttribute("expanded") || !tabs.verticalMode
+    const expanded = tabs.hasAttribute("expanded");
+    const rows = !tabs.verticalMode
       ? []
       : tabs.visibleTabs.filter(tab => tab.hasAttribute("data-tree-level") &&
           !tab.hasAttribute("data-tree-hidden") && !tab.closing && !tab.pinned);
     const indices = new Map(rows.map((tab, index) => [tab.linkedPanel, index]));
     const lastChildren = new Map();
-    const tracks = rows.map(() => [0, 0, 0]);
+    const tracks = rows.map(() => []);
+    const depth = tab => expanded
+      ? Number(tab.style.getPropertyValue("--tree-level"))
+      : Math.min(Number(tab.dataset.treeLevel), 2);
+    const offset = level => `calc(var(--textfox-tree-track-start) + ${level} * var(--textfox-tree-track-step))`;
+    const ink = "linear-gradient(currentColor 0 0)";
     for (const [index, tab] of rows.entries()) {
       const parent = indices.get(tab.dataset.treeParent);
-      if (parent < index) lastChildren.set(parent, index);
+      if (parent !== undefined && parent < index) lastChildren.set(parent, index);
     }
 
     // Each branch starts at its parent's center and ends at the last visible child's center.
     for (const [parent, last] of lastChildren) {
-      const depth = Math.min(Number(rows[parent].dataset.treeLevel), 2);
-      tracks[parent][depth] |= 2;
-      for (let row = parent + 1; row < last; row++) tracks[row][depth] |= 3;
-      tracks[last][depth] |= 1;
+      const level = depth(rows[parent]);
+      tracks[parent][level] |= 2;
+      for (let row = parent + 1; row < last; row++) tracks[row][level] |= 3;
+      tracks[last][level] |= 1;
     }
 
     const nextPainted = new Set();
     for (const [index, tab] of rows.entries()) {
-      const lines = tracks[index].flatMap((track, depth) => {
+      const lines = tracks[index].flatMap((track, level) => {
         if (!track) return [];
         const edge = track === 2 ? "bottom" : "top";
         const height = track === 3 ? "100%" : "50%";
-        return `linear-gradient(currentColor 0 0) var(--textfox-tree-side) ${2 + depth * 2}px ${edge} 0 / 1px ${height} no-repeat`;
+        return `${ink} var(--textfox-tree-side) ${offset(level)} ${edge} 0 / 1px ${height} no-repeat`;
       });
       if (!lines.length) continue;
+      const parent = rows[indices.get(tab.dataset.treeParent)];
+      if (expanded && parent) {
+        const start = offset(depth(parent));
+        const width = `max(0px, calc(var(--textfox-tree-frame-start) - ${start}))`;
+        lines.push(`${ink} var(--textfox-tree-side) ${start} top calc(50% - 0.5px) / ${width} 1px no-repeat`);
+      }
       tab.style.setProperty("--textfox-tree-lines", lines.join(", "));
       tab.setAttribute("textfox-tree-line", "");
       nextPainted.add(tab);

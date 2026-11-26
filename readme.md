@@ -75,8 +75,9 @@ _a firefox theme for the tui enthusiast_
 >   retos. As ações da barra de endereços ficam em um controle separado dos
 >   indicadores de proteção e contêiner. A barra de status pode ser exibida sem
 >   moldura e sem título, com os controles e o texto de status disponíveis.
->   Com as abas em árvore e a lateral expandida, as guias podem seguir o
->   Waterfox, usar a cor de destaque do Textfox ou ficar ocultas. Os títulos
+>   Com as abas em árvore e a lateral expandida, as guias contínuas seguem o
+>   recuo de cada nível. Elas podem ser neutras, usar a cor de destaque do
+>   Textfox ou ficar ocultas. Os títulos
 >   podem ser ocultados por área, e a opção geral continua ocultando todos.
 >   Com a barra retraída, as setas mostram quais abas têm filhas, as guias
 >   contínuas ligam cada pai às filhas visíveis e o número indica quantas
