@@ -80,7 +80,7 @@ $cases = [ordered]@{
     Assert-True (-not $data.original.enabled) "O tema original continuou habilitado."
     Assert-True ($data.outro.enabled -and $data.outro.extra.value -eq 7) "Outro mod foi alterado."
     Assert-True ($data.$modId.preferences -ceq "preferences.json") "O painel de preferências não foi registrado."
-    foreach ($scriptName in @("tab-drop-position.uc.js", "pinned-favicons.uc.js")) {
+    foreach ($scriptName in @("tab-drop-position.uc.js", "pinned-favicons.uc.js", "tab-move-menu.uc.js")) {
       $script = $data.$modId.scripts.chrome.$scriptName
       Assert-True ($script.include -ceq "chrome://browser/content/browser.xhtml") "O script $scriptName não foi registrado para a janela do navegador."
       Assert-True ([IO.File]::Exists((Join-Path $profile.Mod "chrome/$scriptName"))) "O script $scriptName não foi instalado."

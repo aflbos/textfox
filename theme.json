@@ -12,6 +12,9 @@
       },
       "pinned-favicons.uc.js": {
         "include": ["chrome://browser/content/browser.xhtml"]
+      },
+      "tab-move-menu.uc.js": {
+        "include": ["chrome://browser/content/browser.xhtml"]
       }
     }
   },

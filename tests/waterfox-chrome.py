@@ -1049,6 +1049,76 @@ delete window.textfoxTestDrag;
     print(f"PASS {orientation} drag stays centered, highlights the native drop edge and clears on drop")
 
 
+def check_tab_move_menu(execute, orientation):
+    execute((ROOT / "chrome/tab-move-menu.uc.js").read_text(encoding="utf-8"))
+    state = execute("""
+const selected = gBrowser.selectedTab;
+const context = window.TabContextMenu;
+const originalTab = context.contextTab;
+const originalMultiselected = context.multiselected;
+const menu = document.getElementById("moveTabOptionsMenu");
+const back = document.getElementById("textfox-move-tab-back");
+const forward = document.getElementById("textfox-move-tab-forward");
+const openFor = (tab, multiselected = false) => {
+  context.contextTab = tab;
+  context.multiselected = multiselected;
+  menu.dispatchEvent(new Event("popupshowing", { bubbles: true }));
+  return [back.disabled, forward.disabled];
+};
+const move = item => item.dispatchEvent(new Event("command", { bubbles: true }));
+const vertical = arguments[0] === "vertical";
+const [root, child, sibling, otherRoot, pin, otherPin] = Array.from({ length: 6 }, () =>
+  gBrowser.addTrustedTab("about:blank", { skipAnimation: true })
+);
+try {
+  gBrowser.pinTab(pin);
+  gBrowser.pinTab(otherPin);
+  if (vertical) {
+    gBrowser.TreeTabsService.attachTab(child, root);
+    gBrowser.TreeTabsService.attachTab(sibling, root);
+  }
+
+  const pinnedEdge = openFor(pin);
+  move(back);
+  if (pin._tPos !== 0) throw new Error("A disabled command moved the first pinned tab");
+  move(forward);
+  const pinsMoved = pin._tPos === 1 && otherPin._tPos === 0 && pin.pinned && otherPin.pinned;
+  const multiEdge = openFor(otherRoot, true);
+  const ordinaryEdge = openFor(otherRoot);
+  const tabLabel = back.getAttribute("label");
+  move(back);
+  const reordered = vertical ? otherRoot._tPos < root._tPos : otherRoot._tPos + 1 === sibling._tPos;
+
+  let childrenReordered = true;
+  if (vertical) {
+    const service = gBrowser.TreeTabsService;
+    const keptBranch = service.getParent(child) === root && service.getParent(sibling) === root
+      && child._tPos === root._tPos + 1 && sibling._tPos === child._tPos + 1;
+    const childEdge = openFor(child);
+    move(forward);
+    childrenReordered = keptBranch && childEdge[0] && !childEdge[1]
+      && service.getChildren(root)[1] === child && child._tPos === sibling._tPos + 1;
+  }
+  return {
+    pinnedEdge, pinsMoved, multiEdge, ordinaryEdge, tabLabel, reordered, childrenReordered,
+    selected: selected === gBrowser.selectedTab,
+    registered: back.parentNode === menu && forward.parentNode === menu,
+  };
+} finally {
+  context.contextTab = originalTab;
+  context.multiselected = originalMultiselected;
+  for (const tab of [child, sibling, root, otherRoot, pin, otherPin]) {
+    gBrowser.removeTab(tab, { animate: false });
+  }
+}
+""", orientation)
+    assert state["registered"] and state["selected"] and state["tabLabel"], state
+    assert state["pinnedEdge"] == [True, False] and state["pinsMoved"], state
+    assert state["multiEdge"] == [True, True] and state["ordinaryEdge"] == [False, True], state
+    assert state["reordered"] and state["childrenReordered"], state
+    print(f"PASS {orientation} move menu reorders the context tab and respects boundaries")
+
+
 def check_tree_reorder_keeps_root(execute):
     execute("""
 const [source, root, child, last, next] = Array.from({ length: 5 }, () =>
@@ -1210,6 +1280,7 @@ def main():
         check_sine_area_titles(execute)
         check_compact_frame_titles(execute)
         check_tab_drop_position(execute, "horizontal")
+        check_tab_move_menu(execute, "horizontal")
     with gecko_profile(browser, preferences=PREFERENCES, theme_dir=ROOT) as (_, _, execute):
         info = execute("return [Services.appinfo.name, Services.appinfo.version];")
         if info[0].lower() != "waterfox":
@@ -1237,6 +1308,7 @@ def main():
         check_expanded_pinned_grid(execute)
         check_pinned_favicon_cache(execute)
         check_pinned_row_drop(execute)
+        check_tab_move_menu(execute, "vertical")
 
 
 if __name__ == "__main__":

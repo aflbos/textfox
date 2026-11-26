@@ -53,6 +53,9 @@ _a firefox theme for the tui enthusiast_
 >   Nas abas em árvore, arraste normalmente para reordenar. Para soltar como
 >   filha, segure Shift sobre o centro da aba de destino até aparecer um contorno.
 >   Na grade de fixadas, a linha acompanha a posição entre blocos e fileiras.
+>   Para mover sem arrastar, clique com o botão direito na aba e abra **Mover
+>   aba**. Os comandos de uma posição movem a aba entre suas irmãs e levam
+>   junto as filhas, quando houver. Nas fixadas, seguem a ordem da grade.
 >   Este indicador usa um script local e requer que o Sine permita JavaScript
 >   dos mods locais (`sine.allow-unsafe-js`). A instalação mantém essa
 >   preferência do navegador.
