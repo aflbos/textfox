@@ -104,6 +104,9 @@
 
 /* The icon rail has no room for indentation. Keep the tree cues in its gutters. */
 #vertical-tabs[tree-tabs-enabled] #tabbrowser-tabs[orient="vertical"]:not([expanded]) {
+  /* Adaptive themes can supply an accent identical to the rail background. */
+  --textfox-tree-guide-color: color-mix(in srgb, currentColor 75%, var(--tf-accent));
+
   .tabbrowser-tab[data-tree-parent] {
     --textfox-tree-elbow-start: 6px;
 
@@ -123,8 +126,8 @@
     inset-block-start: 0;
     inline-size: 6px;
     block-size: 50%;
-    border-inline-start: 1px solid var(--tf-accent);
-    border-block-end: 1px solid var(--tf-accent);
+    border-inline-start: 1px solid var(--textfox-tree-guide-color);
+    border-block-end: 1px solid var(--textfox-tree-guide-color);
     pointer-events: none;
   }
 
@@ -140,7 +143,7 @@
       position: absolute;
       inset: 0;
       background: var(--textfox-tree-lines);
-      color: var(--tf-accent);
+      color: var(--textfox-tree-guide-color);
       pointer-events: none;
     }
 

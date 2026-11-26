@@ -1232,6 +1232,9 @@ const [root, child, grandchild, sibling, plain] = Array.from({ length: 5 }, () =
   gBrowser.addTrustedTab("about:blank", { skipAnimation: true })
 );
 const service = gBrowser.TreeTabsService;
+const chromeStyle = document.documentElement.style;
+const originalAccent = chromeStyle.getPropertyValue("--tf-accent");
+const originalPriority = chromeStyle.getPropertyPriority("--tf-accent");
 try {
   service.attachTab(child, root);
   service.attachTab(grandchild, child);
@@ -1249,6 +1252,20 @@ try {
     const style = getComputedStyle(tab, "::before");
     return [style.backgroundPosition, style.backgroundSize];
   });
+  chromeStyle.setProperty("--tf-accent", "var(--tf-bg)", "important");
+  const rect = root.getBoundingClientRect();
+  const canvas = document.createElementNS("http://www.w3.org/1999/xhtml", "canvas");
+  canvas.width = 7;
+  canvas.height = 1;
+  const ctx = canvas.getContext("2d");
+  ctx.drawWindow(window, Math.floor(rect.left), Math.floor(rect.bottom) - 5,
+                 canvas.width, 1, "transparent", 1);
+  const pixels = ctx.getImageData(0, 0, canvas.width, 1).data;
+  const background = pixels.slice(24, 27);
+  const contrast = Math.max(...[1, 2, 3, 4].map(x =>
+    Math.max(...background.map((value, channel) => Math.abs(value - pixels[x * 4 + channel])))
+  ));
+  const matchingGuideColors = getComputedStyle(root, "::before").color === guide(child).borderBlockEndColor;
 
   arrow.click();
   await nextFrame();
@@ -1260,11 +1277,12 @@ try {
   await nextFrame();
   await nextFrame();
   return {
-    showTree, lines, collapsed, worksInRail: !tabs.hasAttribute("expanded") &&
+    showTree, lines, contrast, matchingGuideColors, collapsed, worksInRail: !tabs.hasAttribute("expanded") &&
       arrow.getAttribute("aria-expanded") === "true" && !child.hasAttribute("data-tree-hidden") &&
       root.hasAttribute("textfox-tree-line"),
   };
 } finally {
+  chromeStyle.setProperty("--tf-accent", originalAccent, originalPriority);
   for (const tab of [grandchild, child, sibling, root, plain]) gBrowser.removeTab(tab, { animate: false });
   if (wasExpanded) controller.handleToolbarButtonClick();
 }
@@ -1279,6 +1297,7 @@ try {
         ["0% 0%", "auto"],
     ], state
     assert state["collapsed"] == ["false", True, "3", "attr(data-tree-counter)", False], state
+    assert state["contrast"] >= 60 and state["matchingGuideColors"], state
     assert state["worksInRail"], state
     print("PASS collapsed sidebar draws continuous guides from each parent to its last visible child")
 
