@@ -41,12 +41,11 @@
     if (!target || !isLocalMove(container, event, dragged)) return target;
     if (!event.shiftKey) return null;
 
-    // Use the same unanimated bounds as Waterfox for dragover and drop.
-    const row = this._getRowBounds(target);
-    const inset = row.height / 3;
-    return event.clientY >= row.top + inset && event.clientY <= row.bottom - inset
-      ? target
-      : null;
+    const child = this._getLogicalTab(dragged);
+    const service = window.gBrowser.TreeTabsService;
+    const state = service._getStateForTab?.(child)?.state;
+    return child.group === target.group &&
+      !(state && service._wouldExceedMaxDepth?.(state, target, child)) ? target : null;
   }
 
   function placementBetween(service, previous, next, dragged, event, movingSet) {
@@ -63,7 +62,7 @@
     return replacement;
   }
 
-  if (typeof nativeAttachTarget === "function" && typeof treeDnD._getRowBounds === "function") {
+  if (typeof nativeAttachTarget === "function") {
     treeDnD.getAttachTarget = getAttachTarget;
   }
   if (typeof nativePlacementBetween === "function") {

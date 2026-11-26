@@ -60,6 +60,27 @@
     return context?.multiselected ? null : getMove(context?.contextTab, direction);
   }
 
+  function getParentChoices() {
+    const context = window.TabContextMenu;
+    const tab = context?.contextTab;
+    const drag = window.TreeTabsDnD;
+    if (!tab?.visible || tab.closing || tab.pinned || context.multiselected ||
+        !drag?._isEnabled?.(tabs) || typeof drag._syncSubtreeStripPosition !== "function") {
+      return [];
+    }
+
+    const tree = browser.TreeTabsService;
+    const child = drag._getLogicalTab(tab);
+    const currentParent = tree.getParent(child);
+    const descendants = new Set(tree.getDescendants(child));
+    const state = tree._getStateForTab?.(child)?.state;
+    return tabs.visibleTabs.filter(parent =>
+      parent !== child && parent !== currentParent && drag._getLogicalTab(parent) === parent &&
+      !parent.closing && !parent.pinned && parent.group === child.group && !descendants.has(parent) &&
+      !(state && tree._wouldExceedMaxDepth?.(state, parent, child))
+    );
+  }
+
   const items = [-1, 1].map((direction, index) => {
     const backward = direction < 0;
     const item = document.createXULElement("menuitem");
@@ -86,6 +107,35 @@
     return { item, index, direction };
   });
 
+  const attachMenu = document.createXULElement("menu");
+  attachMenu.id = "textfox-attach-tab";
+  attachMenu.hidden = true;
+  attachMenu.setAttribute("label", portuguese ? "Tornar filha de" : "Make Child of");
+  const attachPopup = document.createXULElement("menupopup");
+  attachMenu.append(attachPopup);
+  firstNativeItem.before(attachMenu);
+
+  attachPopup.addEventListener("popupshowing", event => {
+    if (event.target !== attachPopup) return;
+    const child = window.TreeTabsDnD?._getLogicalTab(window.TabContextMenu?.contextTab);
+    attachPopup.replaceChildren(...getParentChoices().map(parent => {
+      const item = document.createXULElement("menuitem");
+      const title = parent.label;
+      item.setAttribute("label", title.length > 80 ? title.slice(0, 79) + "…" : title);
+      item.setAttribute("tooltiptext", title);
+      item.addEventListener("command", () => {
+        const drag = window.TreeTabsDnD;
+        if (drag?._getLogicalTab(window.TabContextMenu?.contextTab) !== child ||
+            !getParentChoices().includes(parent)) return;
+        if (browser.TreeTabsService.attachTab(child, parent)) drag._syncSubtreeStripPosition(child);
+      });
+      return item;
+    }));
+  });
+  attachPopup.addEventListener("popuphidden", event => {
+    if (event.target === attachPopup) attachPopup.replaceChildren();
+  });
+
   menu.addEventListener("popupshowing", event => {
     if (event.target !== menu) return;
     const tab = window.TabContextMenu?.contextTab;
@@ -95,5 +145,7 @@
       item.setAttribute("label", wording[index]);
       item.disabled = !getContextMove(direction);
     }
+    attachMenu.hidden = !window.TreeTabsDnD?._isEnabled?.(tabs);
+    attachMenu.disabled = !getParentChoices().length;
   });
 })();

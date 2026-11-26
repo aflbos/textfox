@@ -52,6 +52,7 @@ _a firefox theme for the tui enthusiast_
 >   Ao reordenar abas na mesma janela, o Textfox mostra uma linha no destino.
 >   Nas abas em árvore, arraste normalmente para reordenar. Para soltar como
 >   filha, segure Shift sobre o centro da aba de destino até aparecer um contorno.
+>   Também é possível vincular uma aba existente em **Mover aba → Tornar filha de**.
 >   Na grade de fixadas, a linha acompanha a posição entre blocos e fileiras.
 >   Para mover sem arrastar, clique com o botão direito na aba e abra **Mover
 >   aba**. Os comandos de uma posição movem a aba entre suas irmãs e levam

@@ -993,7 +993,8 @@ const transfer = eventAt("dragover", third, 0.5).dataTransfer;
 const tree = window.TreeTabsDnD;
 const row = tree._getRowBounds(third);
 const x = Math.round(third.getBoundingClientRect().left + 10);
-return [[0.28, true], [0.5, false], [0.5, true], [0.72, true]].map(([fraction, shiftKey]) => {
+return [[0.2, true], [0.28, true], [0.5, false], [0.5, true], [0.72, true], [0.8, true]]
+  .map(([fraction, shiftKey]) => {
   const y = row.top + row.height * fraction;
   const event = new DragEvent("dragover", {
     bubbles: true, cancelable: true, dataTransfer: transfer, clientX: x, clientY: y, shiftKey,
@@ -1001,17 +1002,20 @@ return [[0.28, true], [0.5, false], [0.5, true], [0.72, true]].map(([fraction, s
   });
   return tree.getAttachTarget(gBrowser.tabContainer, event, first) === third;
 });
-""") == [False, False, True, False], "Attachment requires Shift over the middle third"
+""") == [False, True, False, True, True, False], "Shift enables the full native center zone"
         execute("""
 const drag = window.textfoxTestDrag;
-const event = drag.eventAt("dragover", drag.third, 0.5, true);
-drag.third.dispatchEvent(event);
+const hover = drag.eventAt("dragover", drag.third, 0.5);
+const row = window.TreeTabsDnD._getRowBounds(drag.third);
+const y = Math.round(row.top + row.height / 2);
+const eventData = {
+  bubbles: true, cancelable: true, dataTransfer: hover.dataTransfer,
+  clientX: hover.clientX, clientY: y, screenX: hover.screenX, screenY: window.mozInnerScreenY + y,
+};
+drag.third.dispatchEvent(new DragEvent("dragover", eventData));
+drag.third.dispatchEvent(new DragEvent("dragover", { ...eventData, shiftKey: true }));
 drag.childTarget = gBrowser.tabContainer.querySelector('[data-tree-drop-target="child"]');
-drag.childDrop = new DragEvent("drop", {
-  bubbles: true, cancelable: true, dataTransfer: event.dataTransfer,
-  shiftKey: event.shiftKey,
-  clientX: event.clientX, clientY: event.clientY, screenX: event.screenX, screenY: event.screenY,
-});
+drag.childDrop = new DragEvent("drop", { ...eventData, shiftKey: true });
 """)
         child = wait_for(
             lambda: execute("""
@@ -1059,6 +1063,8 @@ const originalMultiselected = context.multiselected;
 const menu = document.getElementById("moveTabOptionsMenu");
 const back = document.getElementById("textfox-move-tab-back");
 const forward = document.getElementById("textfox-move-tab-forward");
+const attach = document.getElementById("textfox-attach-tab");
+const attachPopup = attach.firstElementChild;
 const openFor = (tab, multiselected = false) => {
   context.contextTab = tab;
   context.multiselected = multiselected;
@@ -1097,6 +1103,7 @@ try {
   }
 
   const pinnedEdge = openFor(pin);
+  const pinnedCannotAttach = attach.disabled;
   move(back);
   if (pin._tPos !== 0) throw new Error("A disabled command moved the first pinned tab");
   move(forward);
@@ -1131,12 +1138,30 @@ try {
   const stayedAtEdge = active._tPos === start + firstDirection;
   pressMoveKey(-firstDirection);
   const movedBack = active._tPos === start && active === gBrowser.selectedTab;
+  let attachment = attach.hidden;
+  if (vertical) {
+    root.setAttribute("label", "Textfox root fixture");
+    child.setAttribute("label", "Textfox child fixture");
+    openFor(root);
+    attachPopup.dispatchEvent(new Event("popupshowing", { bubbles: true }));
+    const excludesDescendants = ![...attachPopup.children].some(
+      item => item.getAttribute("label") === child.label
+    );
+    openFor(otherRoot);
+    attachPopup.dispatchEvent(new Event("popupshowing", { bubbles: true }));
+    const target = [...attachPopup.children].find(item => item.getAttribute("label") === root.label);
+    if (target) move(target);
+    attachment = pinnedCannotAttach && !attach.hidden && excludesDescendants && target &&
+      gBrowser.TreeTabsService.getParent(otherRoot) === root && otherRoot._tPos > child._tPos
+      && gBrowser.selectedTab === active;
+  }
   return {
     pinnedEdge, pinsMoved, multiEdge, ordinaryEdge, tabLabel, reordered, childrenReordered,
     selected: menuKeptSelection,
     shortcuts: [back.getAttribute("acceltext"), forward.getAttribute("acceltext")],
     keyboard: moved && stayedAtEdge && movedBack
       && (!vertical || gBrowser.TreeTabsService.getParent(active) === root),
+    attachment,
     registered: back.parentNode === menu && forward.parentNode === menu,
   };
 } finally {
@@ -1152,7 +1177,7 @@ try {
     assert state["pinnedEdge"] == [True, False] and state["pinsMoved"], state
     assert state["multiEdge"] == [True, True] and state["ordinaryEdge"] == [False, True], state
     assert state["reordered"] and state["childrenReordered"], state
-    assert all(state["shortcuts"]) and state["keyboard"], state
+    assert all(state["shortcuts"]) and state["keyboard"] and state["attachment"], state
     print(f"PASS {orientation} menu and native keyboard shortcuts reorder the intended tab")
 
 
