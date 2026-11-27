@@ -56,8 +56,8 @@ _a firefox theme for the tui enthusiast_
 >   Também é possível vincular uma aba existente com **Tornar filha de**, no menu
 >   de contexto da aba.
 >   Na grade de fixadas, a linha acompanha a posição entre blocos e fileiras.
->   Para mover sem arrastar, clique com o botão direito na aba e use os
->   comandos de movimentação do Textfox. Eles movem a aba entre suas irmãs e levam
+>   Para mover sem arrastar, clique com o botão direito na aba e abra
+>   **Mover aba**. Os comandos de uma posição movem a aba entre suas irmãs e levam
 >   junto as filhas, quando houver. Nas fixadas, seguem a ordem da grade.
 >   Na aba ativa, use **Ctrl+Shift+Page Up** ou **Ctrl+Shift+Page Down** para
 >   mover uma posição na mesma ordem.

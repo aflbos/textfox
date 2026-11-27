@@ -1172,7 +1172,8 @@ try {
   }
 
   const pinnedEdge = openFor(pin);
-  const pinnedCannotAttach = attach.disabled;
+  const pinnedCannotAttach = attach.disabled && attach.hidden &&
+    color.hidden && attach.previousElementSibling.hidden && color.nextElementSibling.hidden;
   move(back);
   if (pin._tPos !== 0) throw new Error("A disabled command moved the first pinned tab");
   move(forward);
@@ -1180,7 +1181,7 @@ try {
   const multiEdge = openFor(otherRoot, true);
   const multiHidden = [back, forward, attach, color].every(item => item.hidden);
   const ordinaryEdge = openFor(otherRoot);
-  const directMovesVisible = !back.hidden && !forward.hidden;
+  const movesVisible = !back.hidden && !forward.hidden;
   const tabLabel = back.getAttribute("label");
   move(back);
   const reordered = vertical ? otherRoot._tPos < root._tPos : otherRoot._tPos + 1 === sibling._tPos;
@@ -1227,17 +1228,17 @@ try {
       && gBrowser.selectedTab === active;
   }
   return {
-    pinnedEdge, pinsMoved, multiEdge, multiHidden, ordinaryEdge, directMovesVisible,
+    pinnedEdge, pinsMoved, multiEdge, multiHidden, ordinaryEdge, movesVisible,
     tabLabel, reordered, childrenReordered,
     selected: menuKeptSelection,
     shortcuts: [back.getAttribute("acceltext"), forward.getAttribute("acceltext")],
     keyboard: moved && stayedAtEdge && movedBack
       && (!vertical || gBrowser.TreeTabsService.getParent(active) === root),
     attachment,
-    registered: back.parentNode === menu && back.previousElementSibling?.localName === "menuseparator"
-      && back.nextElementSibling === forward && forward.nextElementSibling === attach
-      && attach.nextElementSibling === color && color.nextElementSibling?.localName === "menuseparator"
-      && !document.getElementById("moveTabOptionsMenu").querySelector("[id^=textfox-]"),
+    registered: back.parentNode.id === "moveTabOptionsMenu" && back.nextElementSibling === forward
+      && forward.nextElementSibling?.id === "context_moveToStart" && attach.parentNode === menu
+      && attach.previousElementSibling?.localName === "menuseparator"
+      && attach.nextElementSibling === color && color.nextElementSibling?.localName === "menuseparator",
   };
 } finally {
   context.contextTab = originalTab;
@@ -1252,7 +1253,7 @@ try {
     assert state["registered"] and state["selected"] and state["tabLabel"], state
     assert state["pinnedEdge"] == [True, False] and state["pinsMoved"], state
     assert state["multiEdge"] == [True, True] and state["ordinaryEdge"] == [False, True], state
-    assert state["multiHidden"] and state["directMovesVisible"], state
+    assert state["multiHidden"] and state["movesVisible"], state
     assert state["reordered"] and state["childrenReordered"], state
     assert all(state["shortcuts"]) and state["keyboard"] and state["attachment"], state
     print(f"PASS {orientation} menu and native keyboard shortcuts reorder the intended tab")

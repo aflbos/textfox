@@ -4,7 +4,9 @@
   const browser = window.gBrowser;
   const contextMenu = document.getElementById("tabContextMenu");
   const moveMenu = document.getElementById("context_moveTabOptions");
-  if (!browser || !contextMenu || !moveMenu || document.getElementById("textfox-move-tab-back")) {
+  const firstNativeMove = document.getElementById("context_moveToStart");
+  if (!browser || !contextMenu || !moveMenu || !firstNativeMove ||
+      document.getElementById("textfox-move-tab-back")) {
     return;
   }
 
@@ -238,6 +240,7 @@
       item.setAttribute("acceltext", ShortcutUtils.prettifyShortcut(key));
     }
 
+    firstNativeMove.before(item);
     return { item, index, direction };
   });
 
@@ -315,7 +318,7 @@
   });
   const firstSeparator = document.createXULElement("menuseparator");
   const lastSeparator = document.createXULElement("menuseparator");
-  const section = [firstSeparator, ...items.map(({ item }) => item), attachMenu, colorMenu, lastSeparator];
+  const section = [firstSeparator, attachMenu, colorMenu, lastSeparator];
   for (const entry of section) entry.hidden = true;
   moveMenu.after(...section);
 
@@ -324,7 +327,6 @@
     const context = window.TabContextMenu;
     const tab = context?.contextTab;
     const available = Boolean(tab?.visible && !tab.closing && !context.multiselected);
-    firstSeparator.hidden = lastSeparator.hidden = !available;
     const grid = tab?.pinned && tabs.isContainerVerticalPinnedGrid?.(tab);
     const wording = tabs.verticalMode && !grid ? labels.vertical : labels.ordered;
     for (const { item, index, direction } of items) {
@@ -332,8 +334,9 @@
       item.setAttribute("label", wording[index]);
       item.disabled = !getContextMove(direction);
     }
-    attachMenu.hidden = !available || !window.TreeTabsDnD?._isEnabled?.(tabs);
-    attachMenu.disabled = !getParentChoices().length;
+    attachMenu.disabled = !available || !getParentChoices().length;
+    attachMenu.hidden = attachMenu.disabled;
     colorMenu.hidden = !available || !getContextTreeRoot();
+    firstSeparator.hidden = lastSeparator.hidden = attachMenu.hidden && colorMenu.hidden;
   });
 })();
