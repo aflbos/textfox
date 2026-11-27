@@ -53,10 +53,11 @@ _a firefox theme for the tui enthusiast_
 >   Nas abas em árvore, arraste normalmente para reordenar. Para soltar como
 >   filha, segure Shift sobre o centro da aba de destino até aparecer um contorno.
 >   Com Shift pressionado, soltar fora de um destino válido cancela o movimento.
->   Também é possível vincular uma aba existente em **Organizar aba → Tornar filha de**.
+>   Também é possível vincular uma aba existente com **Tornar filha de**, no menu
+>   de contexto da aba.
 >   Na grade de fixadas, a linha acompanha a posição entre blocos e fileiras.
->   Para mover sem arrastar, clique com o botão direito na aba e abra **Organizar
->   aba**. Os comandos de uma posição movem a aba entre suas irmãs e levam
+>   Para mover sem arrastar, clique com o botão direito na aba e use os
+>   comandos de movimentação do Textfox. Eles movem a aba entre suas irmãs e levam
 >   junto as filhas, quando houver. Nas fixadas, seguem a ordem da grade.
 >   Na aba ativa, use **Ctrl+Shift+Page Up** ou **Ctrl+Shift+Page Down** para
 >   mover uma posição na mesma ordem.
@@ -83,7 +84,7 @@ _a firefox theme for the tui enthusiast_
 >   contínuas ligam cada pai às filhas visíveis e o número indica quantas
 >   estão recolhidas.
 >   Clique na seta para abrir ou recolher o ramo pela própria barra retraída.
->   Use **Organizar aba → Cor da árvore** no menu de contexto de uma aba do ramo para colorir
+>   Use **Cor da árvore** no menu de contexto de uma aba do ramo para colorir
 >   as guias e o marcador da raiz. A cor acompanha a raiz na sessão.
 >   Em **Cores por área**, menus de contexto, barra lateral e barra de status
 >   podem usar o padrão do Textfox, cores neutras ou as cores do tema ativo.

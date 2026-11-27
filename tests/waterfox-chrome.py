@@ -1125,10 +1125,12 @@ const selected = gBrowser.selectedTab;
 const context = window.TabContextMenu;
 const originalTab = context.contextTab;
 const originalMultiselected = context.multiselected;
-const menu = document.getElementById("textfox-organize-tab-popup");
+const originalUpdate = context.updateContextMenu;
+const menu = document.getElementById("tabContextMenu");
 const back = document.getElementById("textfox-move-tab-back");
 const forward = document.getElementById("textfox-move-tab-forward");
 const attach = document.getElementById("textfox-attach-tab");
+const color = document.getElementById("textfox-tree-color-menu");
 const attachPopup = attach.querySelector("menupopup");
 const openFor = (tab, multiselected = false) => {
   context.contextTab = tab;
@@ -1160,6 +1162,8 @@ const [root, child, sibling, otherRoot, pin, otherPin] = Array.from({ length: 6 
   gBrowser.addTrustedTab("about:blank", { skipAnimation: true })
 );
 try {
+  // The fixture supplies the context tab without opening an onscreen popup.
+  context.updateContextMenu = () => {};
   gBrowser.pinTab(pin);
   gBrowser.pinTab(otherPin);
   if (vertical) {
@@ -1174,7 +1178,9 @@ try {
   move(forward);
   const pinsMoved = pin._tPos === 1 && otherPin._tPos === 0 && pin.pinned && otherPin.pinned;
   const multiEdge = openFor(otherRoot, true);
+  const multiHidden = [back, forward, attach, color].every(item => item.hidden);
   const ordinaryEdge = openFor(otherRoot);
+  const directMovesVisible = !back.hidden && !forward.hidden;
   const tabLabel = back.getAttribute("label");
   move(back);
   const reordered = vertical ? otherRoot._tPos < root._tPos : otherRoot._tPos + 1 === sibling._tPos;
@@ -1221,20 +1227,22 @@ try {
       && gBrowser.selectedTab === active;
   }
   return {
-    pinnedEdge, pinsMoved, multiEdge, ordinaryEdge, tabLabel, reordered, childrenReordered,
+    pinnedEdge, pinsMoved, multiEdge, multiHidden, ordinaryEdge, directMovesVisible,
+    tabLabel, reordered, childrenReordered,
     selected: menuKeptSelection,
     shortcuts: [back.getAttribute("acceltext"), forward.getAttribute("acceltext")],
     keyboard: moved && stayedAtEdge && movedBack
       && (!vertical || gBrowser.TreeTabsService.getParent(active) === root),
     attachment,
-    registered: [back.id, forward.id, attach.id, "textfox-tree-color-menu"].every(
-      (id, index) => menu.querySelectorAll(":scope > menuitem, :scope > menu")[index]?.id === id
-    ) && menu.parentNode.parentNode.id === "tabContextMenu"
+    registered: back.parentNode === menu && back.previousElementSibling?.localName === "menuseparator"
+      && back.nextElementSibling === forward && forward.nextElementSibling === attach
+      && attach.nextElementSibling === color && color.nextElementSibling?.localName === "menuseparator"
       && !document.getElementById("moveTabOptionsMenu").querySelector("[id^=textfox-]"),
   };
 } finally {
   context.contextTab = originalTab;
   context.multiselected = originalMultiselected;
+  context.updateContextMenu = originalUpdate;
   gBrowser.selectedTab = selected;
   for (const tab of [child, sibling, root, otherRoot, pin, otherPin]) {
     gBrowser.removeTab(tab, { animate: false });
@@ -1244,6 +1252,7 @@ try {
     assert state["registered"] and state["selected"] and state["tabLabel"], state
     assert state["pinnedEdge"] == [True, False] and state["pinsMoved"], state
     assert state["multiEdge"] == [True, True] and state["ordinaryEdge"] == [False, True], state
+    assert state["multiHidden"] and state["directMovesVisible"], state
     assert state["reordered"] and state["childrenReordered"], state
     assert all(state["shortcuts"]) and state["keyboard"] and state["attachment"], state
     print(f"PASS {orientation} menu and native keyboard shortcuts reorder the intended tab")
@@ -1292,7 +1301,7 @@ return (async () => {
     const initial = [colorOf(root), colorOf(first), colorOf(secondRoot), colorOf(secondChild)];
     const applied = guide(root) === guide(first) && guide(root) !== guide(secondRoot)
       && marker(root) === guide(root) && !first.hasAttribute("textfox-tree-color-root");
-    const menuState = menu.parentNode.id === "textfox-organize-tab-popup" && option("blue").checked
+    const menuState = menu.parentNode.id === "tabContextMenu" && option("blue").checked
       && !option("orange").checked;
     const saved = SessionStore.getCustomTabValue(root, key) === "blue"
       && !SessionStore.getCustomTabValue(first, key);
